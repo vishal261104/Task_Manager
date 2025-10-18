@@ -16,7 +16,12 @@ const Layout = ({ user, onLogout }) => {
 
     try {
       const token = localStorage.getItem("token")
-      if (!token) throw new Error("No auth token found")
+      console.log("TOKEN INSIDE LAYOUT:", localStorage.getItem("token"));
+      if (!token) {
+     onLogout()
+    return
+      }
+      // onLogout()
 
       const { data } = await axios.get("http://localhost:4000/api/tasks/gp", {
         headers: { Authorization: `Bearer ${token}` }
@@ -28,7 +33,7 @@ const Layout = ({ user, onLogout }) => {
 
       setTasks(arr)
     } catch (err) {
-      console.error(err)
+      console.log(err)
       setError(err.message || "Could not load tasks.")
       if (err.response?.status === 401) onLogout()
     } finally {
@@ -36,7 +41,17 @@ const Layout = ({ user, onLogout }) => {
     }
   }, [onLogout])
 
-  useEffect(() => { fetchTasks() }, [fetchTasks])
+  // ...existing code...
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    // avoid calling protected API and redirect to login
+    navigate("/login");
+    return;
+  }
+  // fetch profile with Authorization: `Bearer ${token}`...
+}, [navigate]);
+// ...existing code...
 
   const stats = useMemo(() => {
     const completedTasks = tasks.filter(t => 

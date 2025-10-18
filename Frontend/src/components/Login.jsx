@@ -25,7 +25,7 @@ const Login = ({ onSubmit, onSwitchMode }) => {
     if (token) {
       (async () => {
         try {
-          const { data } = await axios.get(`${url}/api/user/me`, {
+          const { data } = await axios.get(`${url}/api/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (data.success) {
@@ -46,31 +46,39 @@ const Login = ({ onSubmit, onSwitchMode }) => {
     console.log("Login form data changed:", formData)
   }, [formData])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!rememberMe) {
-      toast.error('You must enable "Remember Me" to login.')
-      return
+  // ...existing code...
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const resp = await axios.post(`${url}/api/auth/login`, formData);
+    console.log("login response:", resp.data);
+    const body = resp.data || {};
+
+    // Support multiple shapes returned by backend
+    const token = body.token || body.accessToken || body.access_token || body.data?.token;
+    const user = body.user || body.data?.user || body;
+
+    if (!token) {
+      toast.error(body.message || "No auth token returned");
+      setLoading(false);
+      return;
     }
 
-    setLoading(true)
-    try {
-      const { data } = await axios.post(`${url}/api/user/login`, formData)
-      if (!data.token) throw new Error(data.message || "Login failed.")
+    localStorage.setItem("token", token);
+    if (user?.id || user?._id) localStorage.setItem("userId", user.id || user._id);
 
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("userId", data.user.id)
-      setFormData(INITIAL_FORM)
-      onSubmit?.({ token: data.token, userId: data.user.id, ...data.user })
-      toast.success("Login successful! Redirecting...")
-      setTimeout(() => navigate("/"), 1000)
-    } catch (err) {
-      const msg = err.response?.data?.message || err.message
-      toast.error(msg)
-    } finally {
-      setLoading(false)
-    }
+    onSubmit?.({ token, user });
+    toast.success("Login successful");
+    navigate("/");
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    toast.error(msg);
+  } finally {
+    setLoading(false);
   }
+};
+// ...existing code...
 
   const handleSwitchMode = () => {
     toast.dismiss()

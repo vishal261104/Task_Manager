@@ -22,7 +22,7 @@ const SignUp = ({ onSwitchMode }) => {
     setLoading(true)
     setMessage({ text: "", type: "" })
     try {
-      const { data } = await axios.post(`${API_URL}/api/user/register`, formData)
+      const { data } = await axios.post(`${API_URL}/api/auth/register`, formData)
       console.log("SignUp successful:", data)
       setMessage({ text: "Registration successful! You can now log in.", type: "success" })
       setFormData(INITIAL_FORM)
