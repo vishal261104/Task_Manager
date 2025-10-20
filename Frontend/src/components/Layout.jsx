@@ -43,14 +43,8 @@ const Layout = ({ user, onLogout }) => {
 
   // ...existing code...
 useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    // avoid calling protected API and redirect to login
-    navigate("/login");
-    return;
-  }
-  // fetch profile with Authorization: `Bearer ${token}`...
-}, [navigate]);
+  fetchTasks()
+}, [fetchTasks]);
 // ...existing code...
 
   const stats = useMemo(() => {
