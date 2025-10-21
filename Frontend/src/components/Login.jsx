@@ -16,7 +16,7 @@ const Login = ({ onSubmit, onSwitchMode }) => {
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const url = "https://task-manager-2-0ttx.onrender.com"
+  const url = "https://task-manager-3-89el.onrender.com"
 
   // Auto-login
   useEffect(() => {

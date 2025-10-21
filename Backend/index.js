@@ -25,6 +25,14 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
