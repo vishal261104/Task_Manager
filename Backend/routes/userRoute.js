@@ -9,7 +9,7 @@ userRouter.post('/register', registerUser);
 userRouter.post('/login', loginUser);
 
 //Protected routes
-userRouter.get('/profile', authMiddleware, getCurrentUser);
+userRouter.get('/me', authMiddleware, getCurrentUser);
 userRouter.put('/profile', authMiddleware, updateUser);
 userRouter.put('/password', authMiddleware, updatePassword);
 
