@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Pending from './pages/Pending';
 import Complete from './pages/Complete';
+import DailyHabits from './pages/DailyHabits';
 import Profile from './components/Profile';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
@@ -51,7 +52,7 @@ const App = () => {
       <Route
         path="/login"
         element={
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <Login onSubmit={handleAuthSubmit} onSwitchMode={() => navigate('/signup')} />
           </div>
         }
@@ -59,7 +60,7 @@ const App = () => {
       <Route
         path="/signup"
         element={
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <SignUp onSubmit={handleAuthSubmit} onSwitchMode={() => navigate('/login')} />
           </div>
         }
@@ -75,6 +76,7 @@ const App = () => {
         <Route index element={<Dashboard />} />
         <Route path="pending" element={<Pending />} />
         <Route path="complete" element={<Complete />} />
+        <Route path="daily-habits" element={<DailyHabits />} />
         <Route
           path="profile"
           element={<Profile user={currentUser} setCurrentUser={setCurrentUser} onLogout={handleLogout} />}
