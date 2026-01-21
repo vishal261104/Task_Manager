@@ -16,7 +16,7 @@ const Login = ({ onSubmit, onSwitchMode }) => {
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const url = "http://localhost:4000"
+  const url = "https://task-manager-2-0ttx.onrender.com"
 
   // Auto-login
   useEffect(() => {
@@ -25,7 +25,7 @@ const Login = ({ onSubmit, onSwitchMode }) => {
     if (token) {
       (async () => {
         try {
-          const { data } = await axios.get(`${url}/api/auth/me`, {
+          const { data } = await axios.get(`${url}/api/user/me`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (data.success) {
@@ -51,7 +51,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
   try {
-    const resp = await axios.post(`${url}/api/auth/login`, formData);
+    const resp = await axios.post(`${url}/api/user/login`, formData);
     console.log("login response:", resp.data);
     const body = resp.data || {};
 

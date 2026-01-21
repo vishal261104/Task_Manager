@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Trash2, Edit2, CheckCircle2, Circle } from 'lucide-react'
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:4000/api/daily-habits'
+const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/daily-habits'
 
 const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, completedToday }) => {
   const [isToggling, setIsToggling] = useState(false)

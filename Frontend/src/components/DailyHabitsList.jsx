@@ -4,7 +4,7 @@ import axios from 'axios'
 import DailyHabitItem from './DailyHabitItem'
 import AddDailyHabit from './AddDailyHabit'
 
-const API_BASE = 'http://localhost:4000/api/daily-habits'
+const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/daily-habits'
 
 const DailyHabitsList = () => {
   const [habits, setHabits] = useState([])
