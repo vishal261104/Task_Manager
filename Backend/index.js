@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/auth', authRoutes);
+app.use('/api/user', authRoutes);
 app.use('/api/tasks', taskRouter);
 app.use('/api/daily-habits', dailyHabitRouter);
 

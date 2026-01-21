@@ -83,7 +83,7 @@ export async function updateUser(req, res) {
         if(exists){
             return res.status(409).json({success:false,message:"Email already in use"});
         }
-        const user=await User.findByIdAndUpdate(req.user.id,{name,email},{new:true,runValidators:true}).select('name email');
+        const user=await User.findByIdAndUpdate(req.user.id,{name,email},{new:true,runValidators:true}).select('name email _id');
         res.json({success:true,user});
 
     }
