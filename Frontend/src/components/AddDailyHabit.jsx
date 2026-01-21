@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:4000/api/daily-habits'
+const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/daily-habits'
 
 const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit }) => {
   const [formData, setFormData] = useState({
