@@ -4,9 +4,32 @@ import { logger } from "../utils/logger.js";
 
 let pool;
 
+const redactConnectionString = (connectionString) => {
+  if (!connectionString) return '';
+  try {
+    const url = new URL(connectionString);
+    if (url.password) url.password = '***';
+    return url.toString();
+  } catch {
+    return '[unparseable connection string]';
+  }
+};
+
 export const connectDB = async () => {
   try {
-    const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URI;
+    const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URI;
+    const connectionString = (rawConnectionString || '').trim();
+
+    if (!connectionString) {
+      logger.error('Database connection failed', {
+        reason: 'Missing DATABASE_URL/POSTGRES_URI',
+        hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
+        hasPostgresUri: Boolean(process.env.POSTGRES_URI),
+        nodeEnv: process.env.NODE_ENV,
+      });
+      throw new Error('Missing DATABASE_URL (or POSTGRES_URI) environment variable');
+    }
+
     pool = new Pool({
       connectionString,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -23,7 +46,24 @@ export const connectDB = async () => {
     
     return pool;
   } catch (error) {
-    logger.error('Database connection failed', { message: error?.message });
+    let parsed = {};
+    try {
+      const url = new URL((process.env.DATABASE_URL || process.env.POSTGRES_URI || '').trim());
+      parsed = { host: url.hostname, port: url.port, database: url.pathname?.replace(/^\//, '') };
+    } catch {
+      parsed = {};
+    }
+
+    logger.error('Database connection failed', {
+      message: error?.message || String(error),
+      code: error?.code,
+      errno: error?.errno,
+      address: error?.address,
+      port: error?.port,
+      ...parsed,
+      connectionString: redactConnectionString((process.env.DATABASE_URL || process.env.POSTGRES_URI || '').trim()),
+      nodeEnv: process.env.NODE_ENV,
+    });
     throw error;
   }
 };
