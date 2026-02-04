@@ -1,33 +1,39 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import axios from "axios"
 import { UserPlus } from "lucide-react"
 
 import { Inputwrapper, FIELDS, BUTTONCLASSES, MESSAGE_SUCCESS, MESSAGE_ERROR } from '../assets/dummy'
+import { API_ORIGIN } from "../utils/api"
 
-// Dummy & Constants
-const API_URL = "https://task-manager-2-0ttx.onrender.com"
+const API_URL = API_ORIGIN
 const INITIAL_FORM = { name: "", email: "", password: "" }
 
-const SignUp = ({ onSwitchMode }) => {
+const SignUp = ({ onSubmit, onSwitchMode }) => {
   const [formData, setFormData] = useState(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ text: "", type: "" })
-
-  useEffect(() => {
-    console.log("SignUp form data changed:", formData)
-  }, [formData])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setMessage({ text: "", type: "" })
     try {
-      const { data } = await axios.post(`${API_URL}/api/user/register`, formData)
-      console.log("SignUp successful:", data)
-      setMessage({ text: "Registration successful! You can now log in.", type: "success" })
+      const resp = await axios.post(`${API_URL}/api/user/register`, formData)
+      const body = resp.data || {}
+      const token = body.token || body.accessToken || body.access_token || body.data?.token
+      const user = body.user || body.data?.user
+
+      if (token) {
+        localStorage.setItem('token', token)
+        if (user?.id || user?._id) localStorage.setItem('userId', user.id || user._id)
+        onSubmit?.({ token, user })
+        setMessage({ text: "Registration successful! Redirecting...", type: "success" })
+      } else {
+        setMessage({ text: "Registration successful! You can now log in.", type: "success" })
+        onSwitchMode?.()
+      }
       setFormData(INITIAL_FORM)
     } catch (err) {
-      console.error("SignUp error:", err)
       setMessage({ text: err.response?.data?.message || "An error occurred. Please try again.", type: "error" })
     } finally {
       setLoading(false)

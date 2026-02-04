@@ -1,33 +1,38 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Zap, Flame } from 'lucide-react'
 import axios from 'axios'
 import DailyHabitItem from './DailyHabitItem'
 import AddDailyHabit from './AddDailyHabit'
+import StreakAnimation from './StreakAnimation'
+import { logger } from '../utils/logger'
+import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from '../utils/api'
 
-const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/daily-habits'
+const HABITS_API_BASE = `${API_ROOT}/daily-habits`
 
-const DailyHabitsList = () => {
+const DailyHabitsList = ({ onLogout }) => {
   const [habits, setHabits] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState(null)
-  const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0 })
+  const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0, streak: 0 })
+  const [showStreakAnimation, setShowStreakAnimation] = useState(false)
+  const [streakData, setStreakData] = useState(null)
 
-  const getTodayDate = () => {
+  const getTodayDate = useCallback(() => {
     const today = new Date()
     return today.toISOString().split('T')[0]
-  }
+  }, [])
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('token')
-    if (!token) throw new Error('No auth token found')
-    return { Authorization: `Bearer ${token}` }
-  }
+  const getHeaders = useCallback(() => {
+    const headers = getStoredAuthHeaders()
+    if (!headers.Authorization) throw new Error('No auth token found')
+    return headers
+  }, [])
 
-  const fetchHabits = async () => {
+  const fetchHabits = useCallback(async () => {
     try {
       setLoading(true)
-      const { data } = await axios.get(`${API_BASE}/gp`, { headers: getHeaders() })
+      const { data } = await axios.get(`${HABITS_API_BASE}/gp`, { headers: getHeaders() })
       const todayDate = getTodayDate()
       
       const habitsWithStatus = data.data.map(habit => ({
@@ -37,32 +42,36 @@ const DailyHabitsList = () => {
       
       setHabits(habitsWithStatus)
       
-      // Calculate progress
+      const progressData = await axios.get(`${HABITS_API_BASE}/progress`, { headers: getHeaders() })
+      
       const completedCount = habitsWithStatus.filter(h => h.completedToday).length
       const totalCount = habitsWithStatus.length
       setProgress({
         total: totalCount,
         completed: completedCount,
-        percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+        percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+        streak: progressData.data.data.streak || 0
       })
     } catch (error) {
-      console.error('Error fetching habits:', error)
+      logger.warn('Failed to fetch daily habits', { status: error?.response?.status, message: error?.message })
+      if (error?.response?.status === 401) onLogout?.()
     } finally {
       setLoading(false)
     }
-  }
+  }, [getHeaders, getTodayDate, onLogout])
 
   useEffect(() => {
     fetchHabits()
-  }, [])
+  }, [fetchHabits])
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this habit?')) {
       try {
-        await axios.delete(`${API_BASE}/${id}/gp`, { headers: getHeaders() })
+        await axios.delete(`${HABITS_API_BASE}/${id}/gp`, { headers: getHeaders() })
         fetchHabits()
       } catch (error) {
-        console.error('Error deleting habit:', error)
+        logger.warn('Failed to delete daily habit', { status: error?.response?.status, message: error?.message, habitId: id })
+        if (error?.response?.status === 401) onLogout?.()
       }
     }
   }
@@ -80,6 +89,23 @@ const DailyHabitsList = () => {
   const handleModalClose = () => {
     setShowModal(false)
     setSelectedHabit(null)
+  }
+
+  const handleHabitToggle = async (streakResult) => {
+    await fetchHabits()
+    
+    if (streakResult && streakResult.streakUpdated) {
+      setStreakData({
+        streak: streakResult.newStreak,
+        badgesEarned: streakResult.badgesEarned || []
+      })
+      setShowStreakAnimation(true)
+    }
+  }
+
+  const handleStreakAnimationClose = () => {
+    setShowStreakAnimation(false)
+    setStreakData(null)
   }
 
   const getMotivationalMessage = () => {
@@ -100,7 +126,6 @@ const DailyHabitsList = () => {
 
   return (
     <div className="p-4 md:p-6 min-h-screen">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
         <div className="min-w-0">
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -118,7 +143,6 @@ const DailyHabitsList = () => {
         </button>
       </div>
 
-      {/* Progress Section */}
       <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 rounded-xl p-6 mb-6 border border-purple-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -128,15 +152,25 @@ const DailyHabitsList = () => {
             </h2>
             <p className="text-sm text-gray-600 mt-1">{getMotivationalMessage()}</p>
           </div>
-          <div className="text-center">
-            <div className="text-4xl font-bold bg-gradient-to-r from-fuchsia-500 to-purple-600 bg-clip-text text-transparent">
-              {progress.percentage}%
+          <div className="flex gap-4 items-center">
+            <div className="text-center">
+              <div className="text-4xl font-bold bg-gradient-to-r from-fuchsia-500 to-purple-600 bg-clip-text text-transparent">
+                {progress.percentage}%
+              </div>
+              <p className="text-xs text-gray-600 mt-1">{progress.completed}/{progress.total} completed</p>
             </div>
-            <p className="text-xs text-gray-600 mt-1">{progress.completed}/{progress.total} completed</p>
+            {progress.streak > 0 && (
+              <div className="text-center border-l border-purple-200 pl-4">
+                <div className="flex items-center gap-1 text-2xl font-bold text-orange-600">
+                  <Flame className="w-6 h-6" />
+                  {progress.streak}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">day streak</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Progress Bar */}
         <div className="w-full h-3 bg-white rounded-full overflow-hidden border border-purple-200">
           <div
             className="h-full bg-gradient-to-r from-fuchsia-500 to-purple-600 transition-all duration-500 ease-out"
@@ -145,7 +179,6 @@ const DailyHabitsList = () => {
         </div>
       </div>
 
-      {/* Habits List */}
       {habits.length === 0 ? (
         <div className="text-center py-12">
           <Flame className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -163,24 +196,33 @@ const DailyHabitsList = () => {
         <div className="space-y-3">
           {habits.map(habit => (
             <DailyHabitItem
-              key={habit._id}
+              key={habit.id}
               habit={habit}
               completedToday={habit.completedToday}
               onDelete={handleDelete}
               onEdit={handleEdit}
-              onRefresh={fetchHabits}
+              onRefresh={handleHabitToggle}
+              onLogout={onLogout}
             />
           ))}
         </div>
       )}
 
-      {/* Modal */}
       <AddDailyHabit
         isOpen={showModal}
         onClose={handleModalClose}
         habitToEdit={selectedHabit}
         onSubmit={fetchHabits}
+        onLogout={onLogout}
       />
+
+      {showStreakAnimation && streakData && (
+        <StreakAnimation
+          streak={streakData.streak}
+          badgesEarned={streakData.badgesEarned}
+          onClose={handleStreakAnimationClose}
+        />
+      )}
     </div>
   )
 }

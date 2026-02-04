@@ -1,9 +1,9 @@
-// components/TaskModal.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, X, Save, Calendar, AlignLeft, Flag, CheckCircle } from 'lucide-react';
 import { baseControlClasses, priorityStyles, DEFAULT_TASK } from '../assets/dummy';
+import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from '../utils/api';
 
-const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/tasks';
+const TASKS_API_BASE = `${API_ROOT}/tasks`;
 
 const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
   const [taskData, setTaskData] = useState(DEFAULT_TASK);
@@ -22,7 +22,7 @@ const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
         priority: taskToEdit.priority || 'Low',
         dueDate: taskToEdit.dueDate?.split('T')[0] || '',
         completed: normalized,
-        id: taskToEdit._id,
+        id: taskToEdit.id,
       });
     } else {
       setTaskData(DEFAULT_TASK);
@@ -36,11 +36,11 @@ const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
   }, []);
 
   const getHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No auth token found');
+    const auth = getStoredAuthHeaders();
+    if (!auth.Authorization) throw new Error('No auth token found');
     return {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...auth,
     };
   }, []);
 
@@ -54,7 +54,7 @@ const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
     setError(null);
     try {
       const isEdit = Boolean(taskData.id);
-      const url = isEdit ? `${API_BASE}/${taskData.id}/gp` : `${API_BASE}/gp`;
+      const url = isEdit ? `${TASKS_API_BASE}/${taskData.id}/gp` : `${TASKS_API_BASE}/gp`;
       const resp = await fetch(url, {
         method: isEdit ? 'PUT' : 'POST',
         headers: getHeaders(),
@@ -69,7 +69,6 @@ const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
       onSave?.(saved);
       onClose();
     } catch (err) {
-      console.error(err);
       setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);

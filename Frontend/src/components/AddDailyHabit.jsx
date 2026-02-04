@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
 import axios from 'axios'
 
-const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/daily-habits'
+import { API_BASE as API_ROOT } from '../utils/api'
 
-const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit }) => {
+const API_BASE = `${API_ROOT}/daily-habits`
+
+const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit, onLogout }) => {
   const [formData, setFormData] = useState({
     habitName: '',
     description: '',
@@ -51,7 +53,7 @@ const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit }) => {
       if (!token) throw new Error('No auth token found')
 
       if (habitToEdit) {
-        await axios.put(`${API_BASE}/${habitToEdit._id}/gp`, formData, {
+        await axios.put(`${API_BASE}/${habitToEdit.id}/gp`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         })
       } else {
@@ -64,8 +66,8 @@ const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit }) => {
       setFormData({ habitName: '', description: '', color: 'purple', icon: 'star' })
       onClose()
     } catch (err) {
+      if (err.response?.status === 401) onLogout?.()
       setError(err.response?.data?.message || 'Error saving habit')
-      console.error('Error:', err)
     } finally {
       setIsLoading(false)
     }

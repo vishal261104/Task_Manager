@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Trash2, Edit2, CheckCircle2, Circle } from 'lucide-react'
 import axios from 'axios'
+import { API_BASE as API_ROOT } from '../utils/api'
 
-const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/daily-habits'
+const HABITS_API_BASE = `${API_ROOT}/daily-habits`
 
-const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, completedToday }) => {
+const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, completedToday }) => {
   const [isToggling, setIsToggling] = useState(false)
 
   const getTodayDate = () => {
@@ -18,14 +19,20 @@ const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, completedToday }) 
       const token = localStorage.getItem('token')
       const today = getTodayDate()
 
-      await axios.post(
-        `${API_BASE}/${habit._id}/toggle`,
+      const response = await axios.post(
+        `${HABITS_API_BASE}/${habit.id}/toggle`,
         { date: today },
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      onRefresh()
+      
+      if (response.data.streak) {
+        onRefresh(response.data.streak)
+      } else {
+        onRefresh()
+      }
     } catch (error) {
-      console.error('Error toggling habit:', error)
+      if (error?.response?.status === 401) onLogout?.()
+      onRefresh()
     } finally {
       setIsToggling(false)
     }
@@ -82,7 +89,7 @@ const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, completedToday }) 
             <Edit2 size={18} />
           </button>
           <button
-            onClick={() => onDelete(habit._id)}
+            onClick={() => onDelete(habit.id)}
             className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
           >
             <Trash2 size={18} />

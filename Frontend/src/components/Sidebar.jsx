@@ -15,7 +15,11 @@ const Sidebar = ({ user, tasks }) => {
   const [showModal, setShowModal] = useState(false)
 
   const totalTasks = tasks?.length || 0
-  const completedTasks = tasks?.filter((t) => t.completed).length || 0
+  const completedTasks = tasks?.filter((t) =>
+    [true, 1, 'yes'].includes(
+      typeof t.completed === 'string' ? t.completed.toLowerCase() : t.completed
+    )
+  ).length || 0
   const productivity = totalTasks > 0
     ? Math.round((completedTasks / totalTasks) * 100)
     : 0
@@ -55,7 +59,6 @@ const Sidebar = ({ user, tasks }) => {
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <div className={SIDEBAR_CLASSES.desktop}>
         <div className="p-5 border-b border-purple-100 lg:block hidden">
           <div className="flex items-center gap-3">
@@ -103,7 +106,6 @@ const Sidebar = ({ user, tasks }) => {
         </div>
       </div>
 
-      {/* Mobile Toggle Button */}
       {!mobileOpen && (
         <button
           onClick={() => setMobileOpen(true)}
@@ -113,7 +115,6 @@ const Sidebar = ({ user, tasks }) => {
         </button>
       )}
 
-      {/* Mobile Drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40">
           <div
