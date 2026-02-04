@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Filter, SortDesc, SortAsc, Award, Plus, ListChecks, Clock } from 'lucide-react';
 import TaskItem from '../components/TaskItem';
 import TaskModal from '../components/AddTask';
 import { layoutClasses } from '../assets/dummy';
 
-const API_BASE = 'https://task-manager-2-0ttx.onrender.com/api/tasks';
 const sortOptions = [
   { id: 'newest', label: 'Newest', icon: <SortDesc className="w-3 h-3" /> },
   { id: 'oldest', label: 'Oldest', icon: <SortAsc className="w-3 h-3" /> },
@@ -13,30 +12,10 @@ const sortOptions = [
 ];
 
 const PendingTasks = () => {
-  const { tasks = [], refreshTasks } = useOutletContext();
+  const { tasks = [], refreshTasks, onLogout } = useOutletContext();
   const [sortBy, setSortBy] = useState('newest');
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
-
-  const getHeaders = () => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No auth token found');
-    return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-  };
-
-  const handleDelete = useCallback(async (id) => {
-    await fetch(`${API_BASE}/${id}/gp`, { method: 'DELETE', headers: getHeaders() });
-    refreshTasks();
-  }, [refreshTasks]);
-
-  const handleToggleComplete = useCallback(async (id, completed) => {
-    await fetch(`${API_BASE}/${id}/gp`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify({ completed: completed ? 'Yes' : 'No' }),
-    });
-    refreshTasks();
-  }, [refreshTasks]);
 
   const sortedPendingTasks = useMemo(() => {
     const filtered = tasks.filter(
@@ -101,16 +80,11 @@ const PendingTasks = () => {
         ) : (
           sortedPendingTasks.map(task => (
             <TaskItem
-              key={task._id || task.id}
+              key={task.id}
               task={task}
               showCompleteCheckbox
-              onDelete={() => handleDelete(task._id || task.id)}
-              onToggleComplete={() => handleToggleComplete(
-                task._id || task.id,
-                !t.completed
-              )}
-              onEdit={() => { setSelectedTask(task); setShowModal(true); }}
               onRefresh={refreshTasks}
+              onLogout={onLogout}
             />
           ))
         )}

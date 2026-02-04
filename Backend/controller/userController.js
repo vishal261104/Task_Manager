@@ -2,7 +2,8 @@ import User from '../model/usermodel.js';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-const JWT_SECRET=process.env.JWT_SECRET || "your_jwt_secret_here";
+import { logger } from '../utils/logger.js';
+const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRES='24h';
 const createToken=(userId)=>{
     return jwt.sign({id:userId},JWT_SECRET,{expiresIn:TOKEN_EXPIRES});
@@ -27,10 +28,10 @@ export async function registerUser(req,res){
         }
         const hashed=await bcrypt.hash(password,10);
         const user=await User.create({name,email,password:hashed});
-        const token=createToken(user._id);
-        return res.status(201).json({success:true,message:"User registered successfully",token,user:{name:user.name,email:user.email,id:user._id}});
+        const token=createToken(user.id);
+        return res.status(201).json({success:true,message:"User registered successfully",token,user:{name:user.name,email:user.email,id:user.id}});
     }catch(error){
-        console.log(error);
+        logger.error('registerUser failed', { message: error?.message, email });
         return res.status(500).json({success:false,message:"Internal server error"});
     }
 }
@@ -51,10 +52,10 @@ export async function loginUser(req,res){
         if(!match){
             return res.status(401).json({success:false,message:"Invalid email or password"});
         }
-        const token=createToken(user._id);
-        return res.status(200).json({success:true,message:"User logged in successfully",token,user:{name:user.name,email:user.email,id:user._id}});
+        const token=createToken(user.id);
+        return res.status(200).json({success:true,message:"User logged in successfully",token,user:{name:user.name,email:user.email,id:user.id}});
     }catch(error){
-        console.log(error);
+        logger.error('loginUser failed', { message: error?.message, email });
         return res.status(500).json({success:false,message:"Internal server error"});
     }
 }
@@ -62,13 +63,14 @@ export async function loginUser(req,res){
 export async function getCurrentUser(req, res) {
     const userId = req.user.id;
     try {
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findByIdWithBadges(userId);
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
+        delete user.password;
         return res.status(200).json({ success: true, user });
     } catch (error) {
-        console.log(error);
+        logger.error('getCurrentUser failed', { message: error?.message, userId });
         return res.status(500).json({ success: false, message: "Internal server error" });
     }
 }
@@ -83,12 +85,12 @@ export async function updateUser(req, res) {
         if(exists){
             return res.status(409).json({success:false,message:"Email already in use"});
         }
-        const user=await User.findByIdAndUpdate(req.user.id,{name,email},{new:true,runValidators:true}).select('name email _id');
-        res.json({success:true,user});
+        const user=await User.findByIdAndUpdate(req.user.id,{name,email},{new:true,runValidators:true});
+        res.json({success:true,user:{name:user.name,email:user.email,id:user.id}});
 
     }
     catch(error){
-        console.log(error);
+        logger.error('updateUser failed', { message: error?.message, userId: req.user?.id });
         res.status(500).json({success:false,message:"server error"});
 
     }
@@ -100,7 +102,7 @@ export async function updatePassword(req,res){
         return res.status(400).json({success:false,message:"password invalid or too short"});
     }
     try{
-        const user=await User.findById(req.user.id).select("password");
+        const user=await User.findById(req.user.id);
         if(!user){
             return res.status(404).json({success:false,message:"User not found"});
             
@@ -110,10 +112,10 @@ export async function updatePassword(req,res){
             return res.status(401).json({success:false,message:"Current password is incorrect"});
         }
         const hashed=await bcrypt.hash(newPassword,10);
-        await User.findByIdAndUpdate(req.user.id,{password:hashed});
+        await User.updatePassword(req.user.id,hashed);
         return res.status(200).json({success:true,message:"Password updated successfully"});
     }catch(error){
-        console.log(error);
+        logger.error('updatePassword failed', { message: error?.message, userId: req.user?.id });
         return res.status(500).json({success:false,message:"Internal server error"});
     }
 }

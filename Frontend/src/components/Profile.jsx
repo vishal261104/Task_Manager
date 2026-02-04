@@ -6,9 +6,9 @@ import { toast, ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 
 import { INPUT_WRAPPER, FULL_BUTTON, SECTION_WRAPPER, BACK_BUTTON, DANGER_BTN, personalFields, securityFields } from '../assets/dummy'
+import { API_ORIGIN } from "../utils/api"
 
-// Constants & Dummy Data
-const API_URL = "https://task-manager-2-0ttx.onrender.com"
+const API_URL = API_ORIGIN
 
 export default function Profile({ setCurrentUser, onLogout }) {
   const [profile, setProfile] = useState({ name: "", email: "" })

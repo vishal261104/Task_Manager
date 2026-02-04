@@ -3,7 +3,6 @@ import { useOutletContext } from "react-router-dom"
 import { Plus, Filter, Home as HomeIcon, Calendar as CalendarIcon, Flame } from "lucide-react"
 import TaskModal from "../components/AddTask"
 import TaskItem from "../components/TaskItem"
-import axios from "axios"
 
 import {
   WRAPPER, HEADER, ADD_BUTTON, STATS_GRID, STAT_CARD, ICON_WRAPPER, VALUE_CLASS, LABEL_CLASS,
@@ -11,16 +10,12 @@ import {
   TABS_WRAPPER, TAB_BASE, TAB_ACTIVE, TAB_INACTIVE
 } from '../assets/dummy'
 
-// API Base
-const API_BASE = "https://task-manager-2-0ttx.onrender.com/api/tasks"
-
 const Dashboard = () => {
-  const { tasks, refreshTasks } = useOutletContext()
+  const { tasks, refreshTasks, onLogout } = useOutletContext()
   const [filter, setFilter] = useState("all")
   const [showModal, setShowModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
 
-  // Calculate stats
   const stats = useMemo(() => ({
     total: tasks.length,
     lowPriority: tasks.filter(t => t.priority?.toLowerCase() === "low").length,
@@ -32,7 +27,6 @@ const Dashboard = () => {
     ).length,
   }), [tasks])
 
-  // Filter tasks
   const filteredTasks = useMemo(() => tasks.filter(task => {
     const dueDate = new Date(task.dueDate)
     const today = new Date()
@@ -51,21 +45,14 @@ const Dashboard = () => {
     }
   }), [tasks, filter])
 
-  // Save tasks
-  const handleTaskSave = useCallback(async (taskData) => {
-    try {
-      if (taskData.id) await axios.put(`${API_BASE}/${taskData.id}/gp`, taskData)
-      refreshTasks()
-      setShowModal(false)
-      setSelectedTask(null)
-    } catch (error) {
-      console.error("Error saving task:", error)
-    }
+  const handleTaskSave = useCallback(() => {
+    refreshTasks()
+    setShowModal(false)
+    setSelectedTask(null)
   }, [refreshTasks])
 
   return (
     <div className={WRAPPER}>
-      {/* Header */}
       <div className={HEADER}>
         <div className="min-w-0">
           <h1 className="text-xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -80,7 +67,6 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* Stats */}
       <div className={STATS_GRID}>
         {STATS.map(({ key, label, icon: Icon, iconColor, borderColor = "border-purple-100", valueKey, textColor, gradient }) => (
           <div key={key} className={`${STAT_CARD} ${borderColor}`}>
@@ -95,9 +81,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Content */}
       <div className="space-y-6">
-        {/* Filter */}
         <div className={FILTER_WRAPPER}>
           <div className="flex items-center gap-2 min-w-0">
             <Filter className="w-5 h-5 text-purple-500 shrink-0" />
@@ -113,7 +97,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Task List */}
         <div className="space-y-4">
           {filteredTasks.length === 0 ? (
             <div className={EMPTY_STATE.wrapper}>
@@ -125,24 +108,22 @@ const Dashboard = () => {
           ) : (
             filteredTasks.map(task => (
               <TaskItem
-                key={task._id || task.id}
+                key={task.id}
                 task={task}
                 onRefresh={refreshTasks}
+                onLogout={onLogout}
                 showCompleteCheckbox
-                onEdit={() => { setSelectedTask(task); setShowModal(true); }}
               />
             ))
           )}
         </div>
 
-        {/* Add Task (Desktop) */}
         <div onClick={() => setShowModal(true)} className="hidden md:flex items-center justify-center p-4 border-2 border-dashed border-purple-200 rounded-xl hover:border-purple-400 bg-purple-50/50 cursor-pointer transition-colors">
           <Plus className="w-5 h-5 text-purple-500 mr-2" />
           <span className="text-gray-600 font-medium">Add New Task</span>
         </div>
       </div>
 
-      {/* Modal */}
       <TaskModal
         isOpen={showModal || !!selectedTask}
         onClose={() => { setShowModal(false); setSelectedTask(null); }}

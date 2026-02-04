@@ -5,7 +5,7 @@ import TaskItem from "../components/TaskItem"
 import { SORT_OPTIONS, CT_CLASSES } from "../assets/dummy"
 
 const CompletedTasks = () => {
-  const { tasks, refreshTasks } = useOutletContext()
+  const { tasks, refreshTasks, onLogout } = useOutletContext()
   const [sortBy, setSortBy] = useState("newest")
 
   const sortedCompletedTasks = useMemo(() => {
@@ -31,7 +31,6 @@ const CompletedTasks = () => {
 
   return (
     <div className={CT_CLASSES.page}>
-      {/* Header */}
       <div className={CT_CLASSES.header}>
         <div className={CT_CLASSES.titleWrapper}>
           <h1 className={CT_CLASSES.title}>
@@ -43,7 +42,6 @@ const CompletedTasks = () => {
           </p>
         </div>
 
-        {/* Sort Controls */}
         <div className={CT_CLASSES.sortContainer}>
           <div className={CT_CLASSES.sortBox}>
             <div className={CT_CLASSES.filterLabel}>
@@ -51,7 +49,6 @@ const CompletedTasks = () => {
               <span className="text-xs md:text-sm">Sort by:</span>
             </div>
 
-            {/* Mobile Dropdown */}
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
@@ -62,7 +59,6 @@ const CompletedTasks = () => {
               ))}
             </select>
 
-            {/* Desktop Buttons */}
             <div className={CT_CLASSES.btnGroup}>
               {SORT_OPTIONS.map(opt => (
                 <button
@@ -82,7 +78,6 @@ const CompletedTasks = () => {
         </div>
       </div>
 
-      {/* Task List */}
       <div className={CT_CLASSES.list}>
         {sortedCompletedTasks.length === 0 ? (
           <div className={CT_CLASSES.emptyState}>
@@ -95,9 +90,10 @@ const CompletedTasks = () => {
         ) : (
           sortedCompletedTasks.map(task => (
             <TaskItem
-              key={task._id || task.id}
+              key={task.id}
               task={task}
               onRefresh={refreshTasks}
+              onLogout={onLogout}
               showCompleteCheckbox={false}
               className="opacity-90 hover:opacity-100 transition-opacity text-sm md:text-base"
             />

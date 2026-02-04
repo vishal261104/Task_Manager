@@ -4,10 +4,11 @@ import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { toast, ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
+import { logger } from "../utils/logger"
+import { API_ORIGIN } from "../utils/api"
 
 import { INPUTWRAPPER, BUTTON_CLASSES } from '../assets/dummy'
 
-// Dummy data and repeated CSS
 const INITIAL_FORM = { email: "", password: "" }
 
 const Login = ({ onSubmit, onSwitchMode }) => {
@@ -16,16 +17,14 @@ const Login = ({ onSubmit, onSwitchMode }) => {
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const url = "https://task-manager-2-0ttx.onrender.com"
 
-  // Auto-login
   useEffect(() => {
     const token = localStorage.getItem("token")
     const userId = localStorage.getItem("userId")
     if (token) {
       (async () => {
         try {
-          const { data } = await axios.get(`${url}/api/user/me`, {
+          const { data } = await axios.get(`${API_ORIGIN}/api/user/me`, {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (data.success) {
@@ -36,26 +35,20 @@ const Login = ({ onSubmit, onSwitchMode }) => {
             localStorage.clear()
           }
         } catch {
+          logger.warn("Session restore failed")
           localStorage.clear()
         }
       })()
     }
   }, [navigate, onSubmit])
 
-  useEffect(() => {
-    console.log("Login form data changed:", formData)
-  }, [formData])
-
-  // ...existing code...
 const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
   try {
-    const resp = await axios.post(`${url}/api/user/login`, formData);
-    console.log("login response:", resp.data);
+    const resp = await axios.post(`${API_ORIGIN}/api/user/login`, formData);
     const body = resp.data || {};
 
-    // Support multiple shapes returned by backend
     const token = body.token || body.accessToken || body.access_token || body.data?.token;
     const user = body.user || body.data?.user || body;
 
@@ -73,19 +66,18 @@ const handleSubmit = async (e) => {
     navigate("/");
   } catch (err) {
     const msg = err.response?.data?.message || err.message;
+    logger.warn("Login request failed", { status: err.response?.status, message: msg })
     toast.error(msg);
   } finally {
     setLoading(false);
   }
 };
-// ...existing code...
 
   const handleSwitchMode = () => {
     toast.dismiss()
     onSwitchMode?.()
   }
 
-  // Field definitions
   const fields = [
     {
       name: "email",
@@ -145,7 +137,6 @@ const handleSubmit = async (e) => {
             checked={rememberMe}
             onChange={() => setRememberMe(!rememberMe)}
             className="h-4 w-4 text-purple-500 focus:ring-purple-400 border-gray-300 rounded"
-            required
           />
           <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
             Remember Me

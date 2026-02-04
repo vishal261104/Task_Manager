@@ -4,8 +4,11 @@ import { format, isToday } from "date-fns"
 import TaskModal from "./AddTask"
 import { getPriorityColor, getPriorityBadgeColor, TI_CLASSES, MENU_OPTIONS, } from "../assets/dummy"
 import { CheckCircle2, MoreVertical, Clock, Calendar } from "lucide-react"
+import { logger } from "../utils/logger"
 
-const API_BASE = "https://task-manager-2-0ttx.onrender.com/api/tasks"
+import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from "../utils/api"
+
+const TASKS_API_BASE = `${API_ROOT}/tasks`
 
 const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) => {
   const [showMenu, setShowMenu] = useState(false)
@@ -26,9 +29,9 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
   }, [task.completed])
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token")
-    if (!token) throw new Error("No auth token found")
-    return { Authorization: `Bearer ${token}` }
+    const headers = getStoredAuthHeaders()
+    if (!headers.Authorization) throw new Error("No auth token found")
+    return headers
   }
 
   const borderColor = isCompleted
@@ -37,12 +40,19 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
 
   const handleComplete = async () => {
     const newStatus = isCompleted ? "No" : "Yes"
+    
+    if (!task.id) {
+      alert('Error: Task ID is missing. Please refresh the page.')
+      return
+    }
+    
     try {
-      await axios.put(`${API_BASE}/${task._id}/gp`, { completed: newStatus }, { headers: getAuthHeaders() })
+      const url = `${TASKS_API_BASE}/${task.id}/gp`
+      await axios.put(url, { completed: newStatus }, { headers: getAuthHeaders() })
       setIsCompleted(!isCompleted)
       onRefresh?.()
     } catch (err) {
-      console.error(err)
+      logger.warn('Task toggle failed', { taskId: task.id, status: err.response?.status })
       if (err.response?.status === 401) onLogout?.()
     }
   }
@@ -55,23 +65,10 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${API_BASE}/${task._id}/gp`, { headers: getAuthHeaders() })
+      await axios.delete(`${TASKS_API_BASE}/${task.id}/gp`, { headers: getAuthHeaders() })
       onRefresh?.()
     } catch (err) {
-      console.error(err)
-      if (err.response?.status === 401) onLogout?.()
-    }
-  }
-
-  const handleSave = async (updatedTask) => {
-    try {
-      const payload = (({ title, description, priority, dueDate, completed }) =>
-        ({ title, description, priority, dueDate, completed }))(updatedTask)
-      await axios.put(`${API_BASE}/${task._id}/gp`, payload, { headers: getAuthHeaders() })
-      setShowEditModal(false)
-      onRefresh?.()
-    } catch (err) {
-      console.error(err)
+      logger.warn('Task delete failed', { taskId: task.id, status: err.response?.status })
       if (err.response?.status === 401) onLogout?.()
     }
   }
@@ -167,7 +164,8 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
         isOpen={showEditModal}
         onClose={()=>setShowEditModal(false)}
         taskToEdit={task}
-        onSave={handleSave}
+        onSave={() => onRefresh?.()}
+        onLogout={onLogout}
       />
     </>
   )

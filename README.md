@@ -1,19 +1,31 @@
 # Task Manager Application
 
-A full-stack task management application that allows users to create, manage, and track their daily tasks. Features user authentication, task categorization by status, and a responsive UI.
+A full-stack task management application that allows users to create, manage, and track their daily tasks and habits. Features user authentication, task categorization, daily habit tracking with streaks, and achievement badges.
 
 ## 🎯 Features
 
 - **User Authentication**
-  - Sign up and login with secure password hashing
+  - Sign up and login with secure password hashing (bcrypt)
   - JWT token-based authentication
   - User profile management
 
 - **Task Management**
   - Create, read, update, and delete tasks
   - Mark tasks as completed or pending
-  - Organize tasks by status (Pending/Completed)
-  - Task dashboard with quick overview
+  - Organize tasks by status (Pending/In-Progress/Completed)
+  - Task priority levels (Low/Medium/High)
+  - Due date tracking
+
+- **Daily Habits & Streaks** 
+  - Track daily habits with custom icons and colors
+  - Mark habits complete/incomplete each day
+  - Build streaks by completing all habits daily
+  - Visual progress tracking
+
+- **Achievement System**
+  - Earn badges for maintaining streaks
+  - Multiple milestone badges (3-day, 7-day, 30-day, etc.)
+  - Badge gallery with progress tracking
 
 - **User Interface**
   - Responsive design with Tailwind CSS
@@ -21,33 +33,55 @@ A full-stack task management application that allows users to create, manage, an
   - Real-time feedback with toast notifications
   - Clean and modern UI with Lucide icons
 
+## 🗄️ Database
+
+**PostgreSQL** - Relational database with:
+- Strong ACID compliance
+- Structured schema with foreign keys
+- Efficient querying and indexing
+- Better performance for complex relationships
+
 ## 📁 Project Structure
 
 ```
 Task_Manager/
 ├── Backend/
 │   ├── config/
-│   │   └── db.js                 # MongoDB connection setup
+│   │   ├── db.js                 # PostgreSQL connection pool
+│   │   ├── schema.sql            # Database schema
+│   │   └── badges.js             # Badge definitions
 │   ├── controller/
 │   │   ├── userController.js     # User authentication logic
-│   │   └── taskController.js     # Task CRUD operations
+│   │   ├── taskController.js     # Task CRUD operations
+│   │   ├── dailyHabitController.js # Habit tracking & streaks
+│   │   └── badgeController.js    # Badge retrieval
 │   ├── middleware/
 │   │   └── auth.js               # JWT authentication middleware
 │   ├── model/
-│   │   ├── userModel.js          # User schema
-│   │   └── taskModel.js          # Task schema
+│   │   ├── usermodel.js          # User data access
+│   │   ├── taskModel.js          # Task data access
+│   │   └── dailyHabitModel.js    # Habit data access
 │   ├── routes/
 │   │   ├── userRoute.js          # Auth endpoints
-│   │   └── taskRoute.js          # Task endpoints
+│   │   ├── taskRoute.js          # Task endpoints
+│   │   ├── dailyHabitRoute.js    # Habit endpoints
+│   │   └── badgeRoute.js         # Badge endpoints
 │   ├── index.js                  # Express server entry point
+│   ├── QUICK_START.md            # Fast setup guide
+│   ├── POSTGRESQL_SETUP.md       # Detailed PostgreSQL setup
+│   ├── MIGRATION_SUMMARY.md      # MongoDB → PostgreSQL changes
 │   └── package.json
 │
 └── Frontend/
     ├── src/
     │   ├── components/
     │   │   ├── AddTask.jsx        # Task creation form
+    │   │   ├── AddDailyHabit.jsx  # Habit creation form
     │   │   ├── CompletedTasks.jsx # Completed tasks display
-    │   │   ├── Dashboard.jsx      # Main dashboard
+    │   │   ├── PendingTasks.jsx   # Pending tasks display
+    │   │   ├── DailyHabitsList.jsx # Habits display
+    │   │   ├── DailyHabitItem.jsx  # Individual habit
+    │   │   ├── StreakBadges.jsx    # Badge display (if exists)
     │   │   ├── Layout.jsx         # Main layout wrapper
     │   │   ├── Login.jsx          # Login form
     │   │   ├── Navbar.jsx         # Navigation bar
@@ -72,7 +106,7 @@ Task_Manager/
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- MongoDB (local or MongoDB Atlas)
+- PostgreSQL (local installation)
 - npm or yarn
 
 ### Backend Setup
@@ -90,8 +124,11 @@ Task_Manager/
 3. Create a `.env` file in the Backend directory:
    ```env
    PORT=4000
-   MONGODB_URI=your_mongodb_connection_string
+   DATABASE_URL=postgresql://taskmanager_user:password123@localhost:5432/task_manager
    JWT_SECRET=your_secret_key
+   NODE_ENV=development
+   # Optional: timezone used for streak "day" boundaries
+   STREAK_TIMEZONE=UTC
    ```
 
 4. Start the server:
@@ -115,7 +152,9 @@ The backend will run on `http://localhost:4000`
 
 3. Create a `.env` file in the Frontend directory (if needed):
    ```env
-   VITE_API_URL=http://localhost:4000/api
+   # Either set API origin OR the full base. Most deployments only need API origin.
+   VITE_API_ORIGIN=http://localhost:4000
+   # VITE_API_BASE=http://localhost:4000/api
    ```
 
 4. Start the development server:
@@ -129,7 +168,7 @@ The frontend will run on `http://localhost:5173`
 
 ### Backend
 - **Framework**: Express.js 5.1
-- **Database**: MongoDB with Mongoose 8.19
+- **Database**: PostgreSQL (pg 8.x)
 - **Authentication**: JWT (jsonwebtoken 9.0.2)
 - **Security**: bcryptjs for password hashing
 - **Validation**: validator.js
@@ -147,17 +186,32 @@ The frontend will run on `http://localhost:5173`
 
 ## 📚 API Endpoints
 
-### Authentication Routes (`/api/auth`)
-- `POST /signup` - Register a new user
+### Authentication Routes (`/api/user`)
+- `POST /register` - Register a new user
 - `POST /login` - Login user
-- `GET /profile` - Get user profile (requires authentication)
+- `GET /me` - Get current user (requires `Authorization: Bearer <token>`)
+- `PUT /profile` - Update name/email (requires auth)
+- `PUT /password` - Change password (requires auth)
 
 ### Task Routes (`/api/tasks`)
-- `GET /` - Get all tasks for the user
-- `POST /` - Create a new task
-- `PUT /:id` - Update a task
-- `DELETE /:id` - Delete a task
-- `PATCH /:id/toggle` - Toggle task completion status
+- `GET /gp` - Get all tasks for the user
+- `POST /gp` - Create a new task
+- `GET /:id/gp` - Get a single task
+- `PUT /:id/gp` - Update a task
+- `DELETE /:id/gp` - Delete a task
+
+### Daily Habit Routes (`/api/daily-habits`)
+- `GET /gp` - List habits
+- `POST /gp` - Create habit
+- `GET /progress` - Progress summary (total/completed/streak)
+- `POST /:id/toggle` - Toggle completion for a date (body: `{ "date": "YYYY-MM-DD" }`)
+- `GET /:id/gp` - Get habit
+- `PUT /:id/gp` - Update habit
+- `DELETE /:id/gp` - Delete habit
+
+### Badges (`/api/badges`)
+- `GET /user` - Get user badges (requires auth)
+- `GET /mapping` - Get badge milestones mapping
 
 ### Health Check
 - `GET /health` - Server health and database connection status
@@ -204,7 +258,7 @@ Deploy to:
 ## 🐛 Troubleshooting
 
 ### Backend issues
-- **MongoDB connection failed**: Check your connection string in `.env`
+- **PostgreSQL connection failed**: Check `DATABASE_URL` in `Backend/.env` and confirm Postgres is running
 - **Port already in use**: Change the PORT in `.env` or kill the process using the port
 
 ### Frontend issues
@@ -216,15 +270,24 @@ Deploy to:
 ### Backend (.env)
 ```
 PORT=4000
-MONGODB_URI=mongodb://localhost:27017/task_manager
+DATABASE_URL=postgresql://taskmanager_user:password123@localhost:5432/task_manager
 JWT_SECRET=your_secure_secret_key_here
 NODE_ENV=development
+STREAK_TIMEZONE=UTC
 ```
 
 ### Frontend (.env.local)
 ```
-VITE_API_URL=http://localhost:4000/api
+VITE_API_ORIGIN=http://localhost:4000
+# VITE_API_BASE=http://localhost:4000/api
 ```
+
+## ▶️ How to Run
+
+- Backend: `cd Backend` then `npm install` then `npm start`
+- Frontend: `cd Frontend` then `npm install` then `npm run dev`
+
+Note: there is no root-level `package.json`, so running `npm start` in the project root will fail.
 
 ## 🤝 Contributing
 

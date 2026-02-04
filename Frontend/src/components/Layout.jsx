@@ -4,6 +4,7 @@ import { Circle, TrendingUp, Zap, Clock } from "lucide-react"
 import Navbar from "./Navbar"
 import Sidebar from "./Sidebar"
 import axios from "axios"
+import { API_BASE, getToken } from "../utils/api"
 
 const Layout = ({ user, onLogout }) => {
   const [tasks, setTasks] = useState([])
@@ -15,15 +16,13 @@ const Layout = ({ user, onLogout }) => {
     setError(null)
 
     try {
-      const token = localStorage.getItem("token")
-      console.log("TOKEN INSIDE LAYOUT:", localStorage.getItem("token"));
+      const token = getToken()
       if (!token) {
      onLogout()
     return
       }
-      // onLogout()
 
-      const { data } = await axios.get("https://task-manager-2-0ttx.onrender.com/api/tasks/gp", {
+      const { data } = await axios.get(`${API_BASE}/tasks/gp`, {
         headers: { Authorization: `Bearer ${token}` }
       })
 
@@ -33,7 +32,6 @@ const Layout = ({ user, onLogout }) => {
 
       setTasks(arr)
     } catch (err) {
-      console.log(err)
       setError(err.message || "Could not load tasks.")
       if (err.response?.status === 401) onLogout()
     } finally {
@@ -41,11 +39,9 @@ const Layout = ({ user, onLogout }) => {
     }
   }, [onLogout])
 
-  // ...existing code...
 useEffect(() => {
   fetchTasks()
 }, [fetchTasks]);
-// ...existing code...
 
   const stats = useMemo(() => {
     const completedTasks = tasks.filter(t => 
@@ -112,7 +108,7 @@ useEffect(() => {
       <div className="ml-0 xl:ml-64 lg:ml-64 md:ml-16 pt-16 p-3 sm:p-4 md:p-4 transition-all duration-300">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           <div className="xl:col-span-2 space-y-3 sm:space-y-4">
-            <Outlet context={{ tasks, refreshTasks: fetchTasks }} />
+            <Outlet context={{ tasks, refreshTasks: fetchTasks, onLogout }} />
           </div>
 
           <div className="xl:col-span-1 space-y-4 sm:space-y-6">
