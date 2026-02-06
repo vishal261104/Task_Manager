@@ -28,6 +28,16 @@ const isValidISODateOnly = (value) => {
     return /^\d{4}-\d{2}-\d{2}$/.test(value);
 };
 
+const isoDateOnlyToUtcMidnightMs = (isoDateOnly) => {
+    if (!isValidISODateOnly(isoDateOnly)) return null;
+    const [yearStr, monthStr, dayStr] = isoDateOnly.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+    return Date.UTC(year, month - 1, day);
+};
+
 export const createDailyHabit=async(req,res)=>{
     try {
         const {habitName,description,color,icon}=req.body || {};
@@ -151,8 +161,8 @@ export const deleteDailyHabitById=async(req,res)=>{
 };
 
 const isBeforeEOD = (today, timeZone) => {
-    // "Before end of day" means: we are still in the same calendar day
-    // in the configured streak timezone.
+    // Guard against edge cases where a request crosses midnight in the configured timezone.
+    // If "today" is derived from the current request time in the same timezone, this will be true.
     return getDateInTimeZone(new Date(), timeZone) === today;
 };
 
@@ -186,16 +196,24 @@ const checkAndUpdateStreak = async (userId, today) => {
         let newStreak = 1;
         const currentStreak = user.streak || 0;
         if (user.last_streak_date) {
-            const lastDate = new Date(user.last_streak_date + 'T00:00:00');
-            const todayDate = new Date(today + 'T00:00:00');
-            const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+            const lastMs = isoDateOnlyToUtcMidnightMs(user.last_streak_date);
+            const todayMs = isoDateOnlyToUtcMidnightMs(today);
 
-            if (diffDays === 1) {
-                newStreak = currentStreak + 1;
-            } else if (diffDays > 1) {
+            if (lastMs === null || todayMs === null) {
                 newStreak = 1;
-            } else if (diffDays === 0) {
-                return { streakUpdated: false, newStreak: currentStreak, badgesEarned: [] };
+            } else {
+                const diffDays = Math.round((todayMs - lastMs) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    newStreak = currentStreak + 1;
+                } else if (diffDays > 1) {
+                    newStreak = 1;
+                } else if (diffDays === 0) {
+                    return { streakUpdated: false, newStreak: currentStreak, badgesEarned: [] };
+                } else {
+                    // Clock skew / future dates: don't update.
+                    return { streakUpdated: false, newStreak: currentStreak, badgesEarned: [] };
+                }
             }
         } else {
             newStreak = 1;
@@ -231,12 +249,11 @@ const checkAndUpdateStreak = async (userId, today) => {
 
 export const toggleCompletion=async(req,res)=>{
     try {
-        const {date}=req.body;
-
-        if (!date || !isValidISODateOnly(date)) {
+        const { date: requestedDate } = req.body || {};
+        if (requestedDate !== undefined && !isValidISODateOnly(requestedDate)) {
             return res.status(400).json({
                 success:false,
-                message:"date is required in YYYY-MM-DD format"
+                message:"date must be in YYYY-MM-DD format"
             });
         }
         
@@ -252,24 +269,38 @@ export const toggleCompletion=async(req,res)=>{
             habit.completions = [];
         }
         
-        const dateIndex=habit.completions.indexOf(date);
+        // Always use the server-calculated "today" in the configured timezone.
+        // This avoids client timezone/UTC drift causing streaks to never increment.
+        const today = getDateInTimeZone(new Date(), STREAK_TIMEZONE);
+        const effectiveDate = today;
+
+        if (requestedDate && requestedDate !== effectiveDate) {
+            logger.info('toggleCompletion received non-today date; normalizing to streak timezone date', {
+                userId: req.user?.id,
+                habitId: req.params?.id,
+                requestedDate,
+                effectiveDate,
+                timeZone: STREAK_TIMEZONE,
+            });
+        }
+
+        const dateIndex=habit.completions.indexOf(effectiveDate);
         let wasCompleted = false;
         if(dateIndex>-1){
             habit.completions.splice(dateIndex,1);
             wasCompleted = false;
         }
         else{
-            habit.completions.push(date);
+            habit.completions.push(effectiveDate);
             wasCompleted = true;
         }
         
         const updatedHabit=await dailyHabit.updateHabit(req.params.id, { completions: habit.completions });
         
-        const today = getDateInTimeZone(new Date(), STREAK_TIMEZONE);
         let streakResult = null;
-        if (wasCompleted && date === today) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            streakResult = await checkAndUpdateStreak(req.user.id, today);
+        if (wasCompleted) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            streakResult = await checkAndUpdateStreak(req.user.id, effectiveDate);
         }
         
         res.json({
