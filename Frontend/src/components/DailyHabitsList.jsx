@@ -15,13 +15,9 @@ const DailyHabitsList = ({ onLogout }) => {
   const [showModal, setShowModal] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState(null)
   const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0, streak: 0 })
+  const [todayDate, setTodayDate] = useState(null)
   const [showStreakAnimation, setShowStreakAnimation] = useState(false)
   const [streakData, setStreakData] = useState(null)
-
-  const getTodayDate = useCallback(() => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
-  }, [])
 
   const getHeaders = useCallback(() => {
     const headers = getStoredAuthHeaders()
@@ -32,25 +28,29 @@ const DailyHabitsList = ({ onLogout }) => {
   const fetchHabits = useCallback(async () => {
     try {
       setLoading(true)
+      const progressRes = await axios.get(`${HABITS_API_BASE}/progress`, { headers: getHeaders() })
+      const serverToday = progressRes?.data?.data?.date
+      setTodayDate(serverToday || null)
+
       const { data } = await axios.get(`${HABITS_API_BASE}/gp`, { headers: getHeaders() })
-      const todayDate = getTodayDate()
+      const effectiveToday = serverToday || new Date().toISOString().split('T')[0]
       
       const habitsWithStatus = data.data.map(habit => ({
         ...habit,
-        completedToday: habit.completions?.includes(todayDate) || false
+        completedToday: habit.completions?.includes(effectiveToday) || false
       }))
       
       setHabits(habitsWithStatus)
-      
-      const progressData = await axios.get(`${HABITS_API_BASE}/progress`, { headers: getHeaders() })
-      
+
+      // Prefer backend progress (uses streak timezone), but keep UI consistent with the rendered habit statuses.
       const completedCount = habitsWithStatus.filter(h => h.completedToday).length
       const totalCount = habitsWithStatus.length
+      const backendStreak = progressRes?.data?.data?.streak || 0
       setProgress({
         total: totalCount,
         completed: completedCount,
         percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
-        streak: progressData.data.data.streak || 0
+        streak: backendStreak
       })
     } catch (error) {
       logger.warn('Failed to fetch daily habits', { status: error?.response?.status, message: error?.message })
@@ -58,7 +58,7 @@ const DailyHabitsList = ({ onLogout }) => {
     } finally {
       setLoading(false)
     }
-  }, [getHeaders, getTodayDate, onLogout])
+  }, [getHeaders, onLogout])
 
   useEffect(() => {
     fetchHabits()
@@ -199,6 +199,7 @@ const DailyHabitsList = ({ onLogout }) => {
               key={habit.id}
               habit={habit}
               completedToday={habit.completedToday}
+              todayDate={todayDate}
               onDelete={handleDelete}
               onEdit={handleEdit}
               onRefresh={handleHabitToggle}

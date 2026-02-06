@@ -5,19 +5,14 @@ import { API_BASE as API_ROOT } from '../utils/api'
 
 const HABITS_API_BASE = `${API_ROOT}/daily-habits`
 
-const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, completedToday }) => {
+const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, completedToday, todayDate }) => {
   const [isToggling, setIsToggling] = useState(false)
-
-  const getTodayDate = () => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
-  }
 
   const handleToggle = async () => {
     try {
       setIsToggling(true)
       const token = localStorage.getItem('token')
-      const today = getTodayDate()
+      const today = todayDate || new Date().toISOString().split('T')[0]
 
       const response = await axios.post(
         `${HABITS_API_BASE}/${habit.id}/toggle`,
