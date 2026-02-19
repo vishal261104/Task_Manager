@@ -17,6 +17,22 @@ const normalizeHabitRow = (row) => {
   };
 };
 
+
+const formatDateToString = (date) => {
+    if (!date) return null;
+    if (typeof date === 'string') return date;
+    // Use CA locale to get YYYY-MM-DD format consistently
+    try {
+        return new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).format(date);
+    } catch (e) {
+        return date.toISOString().split('T')[0];
+    }
+};
+
 const DailyHabit = {
   async create(habitData) {
     const { habitName, description, color, icon, owner } = habitData;
@@ -45,7 +61,7 @@ const DailyHabit = {
         'SELECT completion_date FROM daily_habit_completions WHERE habit_id = $1 ORDER BY completion_date DESC',
         [habit.id]
       );
-      habit.completions = completionsResult.rows.map(row => row.completion_date);
+      habit.completions = completionsResult.rows.map(row => formatDateToString(row.completion_date));
       return habit;
     }));
     
@@ -65,7 +81,7 @@ const DailyHabit = {
       'SELECT completion_date FROM daily_habit_completions WHERE habit_id = $1 ORDER BY completion_date DESC',
       [habit.id]
     );
-    habit.completions = completionsResult.rows.map(row => row.completion_date);
+    habit.completions = completionsResult.rows.map(row => formatDateToString(row.completion_date));
     
     return habit;
   },
@@ -83,7 +99,7 @@ const DailyHabit = {
       'SELECT completion_date FROM daily_habit_completions WHERE habit_id = $1 ORDER BY completion_date DESC',
       [habit.id]
     );
-    habit.completions = completionsResult.rows.map(row => row.completion_date);
+    habit.completions = completionsResult.rows.map(row => formatDateToString(row.completion_date));
     
     return habit;
   },

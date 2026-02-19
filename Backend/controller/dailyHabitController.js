@@ -23,6 +23,13 @@ const getDateInTimeZone = (date, timeZone) => {
     }
 };
 
+const normalizeDate = (value) => {
+    if (!value) return null;
+    if (typeof value === 'string') return value;
+    if (value instanceof Date) return getDateInTimeZone(value, STREAK_TIMEZONE);
+    return String(value);
+};
+
 const isValidISODateOnly = (value) => {
     if (typeof value !== 'string') return false;
     return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -161,8 +168,6 @@ export const deleteDailyHabitById=async(req,res)=>{
 };
 
 const isBeforeEOD = (today, timeZone) => {
-    // Guard against edge cases where a request crosses midnight in the configured timezone.
-    // If "today" is derived from the current request time in the same timezone, this will be true.
     return getDateInTimeZone(new Date(), timeZone) === today;
 };
 
@@ -185,7 +190,10 @@ const checkAndUpdateStreak = async (userId, today) => {
             return { streakUpdated: false, newStreak: user.streak || 0, badgesEarned: [] };
         }
 
-        if (user.last_streak_date === today) {
+        // Normalize last_streak_date (PostgreSQL may return a Date object)
+        const lastStreakDateNormalized = normalizeDate(user.last_streak_date);
+
+        if (lastStreakDateNormalized === today) {
             return { streakUpdated: false, newStreak: user.streak || 0, badgesEarned: [] };
         }
 
@@ -195,8 +203,8 @@ const checkAndUpdateStreak = async (userId, today) => {
 
         let newStreak = 1;
         const currentStreak = user.streak || 0;
-        if (user.last_streak_date) {
-            const lastMs = isoDateOnlyToUtcMidnightMs(user.last_streak_date);
+        if (lastStreakDateNormalized) {
+            const lastMs = isoDateOnlyToUtcMidnightMs(lastStreakDateNormalized);
             const todayMs = isoDateOnlyToUtcMidnightMs(today);
 
             if (lastMs === null || todayMs === null) {
@@ -211,7 +219,6 @@ const checkAndUpdateStreak = async (userId, today) => {
                 } else if (diffDays === 0) {
                     return { streakUpdated: false, newStreak: currentStreak, badgesEarned: [] };
                 } else {
-                    // Clock skew / future dates: don't update.
                     return { streakUpdated: false, newStreak: currentStreak, badgesEarned: [] };
                 }
             }
@@ -269,8 +276,6 @@ export const toggleCompletion=async(req,res)=>{
             habit.completions = [];
         }
         
-        // Always use the server-calculated "today" in the configured timezone.
-        // This avoids client timezone/UTC drift causing streaks to never increment.
         const today = getDateInTimeZone(new Date(), STREAK_TIMEZONE);
         const effectiveDate = today;
 
@@ -346,4 +351,3 @@ export const getHabitProgress=async(req,res)=>{
         });
     }
 };
-
