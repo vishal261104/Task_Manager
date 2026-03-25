@@ -1,8 +1,5 @@
-import pg from "pg";
-const { Pool } = pg;
+import mongoose from "mongoose";
 import { logger } from "../utils/logger.js";
-
-let pool;
 
 const redactConnectionString = (connectionString) => {
   if (!connectionString) return '';
@@ -17,70 +14,38 @@ const redactConnectionString = (connectionString) => {
 
 export const connectDB = async () => {
   try {
-    const rawConnectionString = process.env.DATABASE_URL || process.env.POSTGRES_URI;
+    const rawConnectionString = process.env.MONGODB_URI || process.env.DATABASE_URL;
     const connectionString = (rawConnectionString || '').trim();
 
     if (!connectionString) {
       logger.error('Database connection failed', {
-        reason: 'Missing DATABASE_URL/POSTGRES_URI',
+        reason: 'Missing MONGODB_URI/DATABASE_URL',
+        hasMongodbUri: Boolean(process.env.MONGODB_URI),
         hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
-        hasPostgresUri: Boolean(process.env.POSTGRES_URI),
         nodeEnv: process.env.NODE_ENV,
       });
-      throw new Error('Missing DATABASE_URL (or POSTGRES_URI) environment variable');
+      throw new Error('Missing MONGODB_URI (or DATABASE_URL) environment variable');
     }
 
-    pool = new Pool({
-      connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000,
-    });
+    await mongoose.connect(connectionString);
 
-    const client = await pool.connect();
-    client.release();
-
-    const source = process.env.DATABASE_URL ? 'DATABASE_URL' : (process.env.POSTGRES_URI ? 'POSTGRES_URI' : 'unknown');
+    const source = process.env.MONGODB_URI ? 'MONGODB_URI' : (process.env.DATABASE_URL ? 'DATABASE_URL' : 'unknown');
     logger.info('Database connected', { source });
-    
-    return pool;
-  } catch (error) {
-    let parsed = {};
-    try {
-      const url = new URL((process.env.DATABASE_URL || process.env.POSTGRES_URI || '').trim());
-      parsed = { host: url.hostname, port: url.port, database: url.pathname?.replace(/^\//, '') };
-    } catch {
-      parsed = {};
-    }
 
+    return mongoose.connection;
+  } catch (error) {
     logger.error('Database connection failed', {
       message: error?.message || String(error),
-      code: error?.code,
-      errno: error?.errno,
-      address: error?.address,
-      port: error?.port,
-      ...parsed,
-      connectionString: redactConnectionString((process.env.DATABASE_URL || process.env.POSTGRES_URI || '').trim()),
+      connectionString: redactConnectionString((process.env.MONGODB_URI || process.env.DATABASE_URL || '').trim()),
       nodeEnv: process.env.NODE_ENV,
     });
     throw error;
   }
 };
 
-export const getPool = () => {
-  if (!pool) {
-    throw new Error("Database pool not initialized. Call connectDB first.");
+export const getConnection = () => {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error("Database not connected. Call connectDB first.");
   }
-  return pool;
-};
-
-export const query = async (text, params) => {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(text, params);
-    return result;
-  } finally {
-    client.release();
-  }
+  return mongoose.connection;
 };
