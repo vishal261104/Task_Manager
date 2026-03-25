@@ -1,9 +1,14 @@
+import mongoose from 'mongoose';
 import dailyHabit from '../model/dailyHabitModel.js';
 import User from '../model/usermodel.js';
 import { BADGE_MILESTONES, getEarnedBadges } from '../config/badges.js';
 import { logger } from '../utils/logger.js';
 
 const STREAK_TIMEZONE = process.env.STREAK_TIMEZONE || 'UTC';
+
+const isValidObjectId = (value) => {
+    return mongoose.Types.ObjectId.isValid(value);
+};
 
 const getDateInTimeZone = (date, timeZone) => {
     try {
@@ -190,7 +195,7 @@ const checkAndUpdateStreak = async (userId, today) => {
             return { streakUpdated: false, newStreak: user.streak || 0, badgesEarned: [] };
         }
 
-        // Normalize last_streak_date (PostgreSQL may return a Date object)
+        // Normalize last_streak_date
         const lastStreakDateNormalized = normalizeDate(user.last_streak_date);
 
         if (lastStreakDateNormalized === today) {

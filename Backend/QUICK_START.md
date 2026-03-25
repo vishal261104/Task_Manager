@@ -61,6 +61,8 @@ NODE_ENV=development
 STREAK_TIMEZONE=UTC
 ```
 
+If you point `DATABASE_URL` to a hosted database like Neon, add `?sslmode=require` (or set `DB_SSL=true`).
+
 ### 5. Start Server
 
 ```bash

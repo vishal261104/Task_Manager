@@ -1,96 +1,131 @@
-import { getPool } from '../config/db.js';
+import mongoose from 'mongoose';
+
+const badgeSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  earnedAt: { type: Date, default: Date.now },
+  streakRequired: { type: Number, required: true }
+}, { _id: false });
+
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  streak: { type: Number, default: 0 },
+  last_streak_date: { type: String, default: null },
+  badges: [badgeSchema]
+}, { timestamps: true });
+
+const UserModel = mongoose.model('User', userSchema);
 
 const User = {
   async create({ name, email, password }) {
-    const result = await getPool().query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, streak, last_streak_date, created_at',
-      [name, email, password]
-    );
-    return result.rows[0];
+    const user = new UserModel({ name, email, password });
+    const saved = await user.save();
+    return {
+      id: saved._id,
+      name: saved.name,
+      email: saved.email,
+      streak: saved.streak,
+      last_streak_date: saved.last_streak_date,
+      created_at: saved.createdAt
+    };
   },
 
   async findOne({ email, _id }) {
     if (_id) {
-      const result = await getPool().query(
-        'SELECT * FROM users WHERE email = $1 AND id != $2',
-        [email, _id.$ne]
-      );
-      return result.rows[0];
+      const user = await UserModel.findOne({ email, _id: { $ne: _id.$ne } });
+      if (!user) return null;
+      return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        streak: user.streak,
+        last_streak_date: user.last_streak_date
+      };
     }
-    const result = await getPool().query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-    return result.rows[0];
+    const user = await UserModel.findOne({ email });
+    if (!user) return null;
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      streak: user.streak,
+      last_streak_date: user.last_streak_date
+    };
   },
 
   async findById(userId) {
-    const result = await getPool().query(
-      'SELECT * FROM users WHERE id = $1',
-      [userId]
-    );
-    return result.rows[0];
+    const user = await UserModel.findById(userId);
+    if (!user) return null;
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      streak: user.streak,
+      last_streak_date: user.last_streak_date
+    };
   },
 
   async findByIdAndUpdate(userId, updates, options = {}) {
-    const fields = [];
-    const values = [];
-    let paramCount = 1;
-
-    Object.entries(updates).forEach(([key, value]) => {
-      fields.push(`${key} = $${paramCount}`);
-      values.push(value);
-      paramCount++;
-    });
-
-    values.push(userId);
-    const result = await getPool().query(
-      `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $${paramCount} 
-       RETURNING id, name, email, streak, last_streak_date`,
-      values
-    );
-    return result.rows[0];
+    const user = await UserModel.findByIdAndUpdate(userId, updates, { new: true });
+    if (!user) return null;
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      streak: user.streak,
+      last_streak_date: user.last_streak_date
+    };
   },
 
   async updatePassword(userId, newPassword) {
-    const result = await getPool().query(
-      'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id',
-      [newPassword, userId]
-    );
-    return result.rows[0];
+    const user = await UserModel.findByIdAndUpdate(userId, { password: newPassword }, { new: true });
+    if (!user) return null;
+    return { id: user._id };
   },
 
   async findByIdWithBadges(userId) {
-    const userResult = await getPool().query(
-      'SELECT id, name, email, streak, last_streak_date, created_at, updated_at FROM users WHERE id = $1',
-      [userId]
-    );
-    
-    if (userResult.rows.length === 0) return null;
-    
-    const badgesResult = await getPool().query(
-      'SELECT name, earned_at, streak_required FROM user_badges WHERE user_id = $1 ORDER BY earned_at DESC',
-      [userId]
-    );
-    
-    const user = userResult.rows[0];
-    user.badges = badgesResult.rows;
-    return user;
+    const user = await UserModel.findById(userId);
+    if (!user) return null;
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      streak: user.streak,
+      last_streak_date: user.last_streak_date,
+      created_at: user.createdAt,
+      updated_at: user.updatedAt,
+      badges: user.badges.map(b => ({
+        name: b.name,
+        earned_at: b.earnedAt,
+        streak_required: b.streakRequired
+      }))
+    };
   },
 
   async updateStreak(userId, streak, lastStreakDate) {
-    const result = await getPool().query(
-      'UPDATE users SET streak = $1, last_streak_date = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
-      [streak, lastStreakDate, userId]
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      { streak, last_streak_date: lastStreakDate },
+      { new: true }
     );
-    return result.rows[0];
+    if (!user) return null;
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      streak: user.streak,
+      last_streak_date: user.last_streak_date
+    };
   },
 
   async addBadge(userId, badge) {
-    await getPool().query(
-      'INSERT INTO user_badges (user_id, name, streak_required) VALUES ($1, $2, $3)',
-      [userId, badge.name, badge.streakRequired]
+    await UserModel.findByIdAndUpdate(
+      userId,
+      { $push: { badges: { name: badge.name, streakRequired: badge.streakRequired } } }
     );
   },
 

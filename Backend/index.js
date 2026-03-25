@@ -1,5 +1,6 @@
 import express from 'express';
-import { connectDB, getPool }  from './config/db.js';
+import mongoose from 'mongoose';
+import { connectDB }  from './config/db.js';
 import cors from 'cors';
 import 'dotenv/config';
 import { logger } from './utils/logger.js';
@@ -47,17 +48,23 @@ app.get('/', (req, res) => {
 
 app.get('/health', async (req, res) => {
   try {
-    const pool = getPool();
-    const result = await pool.query('SELECT NOW()');
-    res.json({ 
-      status: 'OK', 
-      database: 'Connected',
-      timestamp: result.rows[0].now
-    });
+    const state = mongoose.connection.readyState;
+    if (state === 1) {
+      res.json({
+        status: 'OK',
+        database: 'Connected',
+        timestamp: new Date()
+      });
+    } else {
+      res.status(500).json({
+        status: 'ERROR',
+        database: 'Disconnected'
+      });
+    }
   } catch (error) {
     logger.error('Healthcheck failed', { message: error?.message });
-    res.status(500).json({ 
-      status: 'ERROR', 
+    res.status(500).json({
+      status: 'ERROR',
       database: 'Disconnected',
       error: error.message
     });

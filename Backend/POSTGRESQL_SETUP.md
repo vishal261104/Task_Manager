@@ -104,6 +104,14 @@ For production with SSL:
 postgresql://username:password@host:port/database_name?sslmode=require
 ```
 
+#### Notes for Neon (and other hosted Postgres)
+
+- Neon commonly requires SSL. Prefer adding `?sslmode=require` to your `DATABASE_URL`.
+- This backend also supports these optional overrides:
+  - `DB_SSL=true|false` to force SSL on/off.
+  - `DB_SSL_REJECT_UNAUTHORIZED=true|false` to control certificate verification.
+  - `PGSSLMODE=require|verify-ca|verify-full` (read from env and/or `DATABASE_URL`).
+
 ### 5. Verify Database Connection
 
 Test the connection:

@@ -1,10 +1,9 @@
- import Task  from "../model/taskModel.js";
+import mongoose from 'mongoose';
+import Task  from "../model/taskModel.js";
 import { logger } from "../utils/logger.js";
 
-const parsePositiveInt = (value) => {
-    const parsed = Number.parseInt(String(value), 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) return null;
-    return parsed;
+const isValidObjectId = (value) => {
+    return mongoose.Types.ObjectId.isValid(value);
 };
 
 const isValidISODateOnly = (value) => {
@@ -13,15 +12,8 @@ const isValidISODateOnly = (value) => {
     return /^\d{4}-\d{2}-\d{2}$/.test(value);
 };
 
-const isPgClientError = (error) => {
-    const code = error?.code;
-    return (
-        code === '22P02' || // invalid_text_representation
-        code === '23502' || // not_null_violation
-        code === '23503' || // foreign_key_violation
-        code === '23505' || // unique_violation
-        code === '23514'    // check_violation
-    );
+const isMongooseValidationError = (error) => {
+    return error?.name === 'ValidationError' || error?.name === 'CastError';
 };
 
 
@@ -56,7 +48,7 @@ const isPgClientError = (error) => {
         });
     } catch (error) {
         logger.warn('createTask failed', { message: error?.message, userId: req.user?.id });
-        const status = isPgClientError(error) ? 400 : 500;
+        const status = isMongooseValidationError(error) ? 400 : 500;
         res.status(status).json({
             success:false,
             message: status === 400 ? "Bad Request" : "Internal server error"
@@ -76,16 +68,17 @@ export const getTasks=async(req,res)=>{
     }
 };
 
-export const getTaskById=async(req,res)=>{    try {
-        const taskId = parsePositiveInt(req.params.id);
-        if (!taskId) {
+export const getTaskById=async(req,res)=>{
+    try {
+        const taskId = req.params.id;
+        if (!isValidObjectId(taskId)) {
             return res.status(400).json({
                 success:false,
                 message:"Invalid task id"
             });
         }
 
-        const task=await Task.findOne({id:taskId,owner:req.user.id});
+        const task=await Task.findOne({_id:taskId,owner:req.user.id});
         if(!task){
             return res.status(404).json({
                 success:false,
@@ -104,8 +97,8 @@ export const getTaskById=async(req,res)=>{    try {
 
 export const updateTaskById=async(req,res)=>{
      try{
-        const taskId = parsePositiveInt(req.params.id);
-        if (!taskId) {
+        const taskId = req.params.id;
+        if (!isValidObjectId(taskId)) {
             return res.status(400).json({
                 success:false,
                 message:"Invalid task id"
@@ -135,7 +128,7 @@ export const updateTaskById=async(req,res)=>{
             data.title = data.title.trim();
         }
 
-        const updatedTask=await Task.findOneAndUpdate({id:taskId,owner:req.user.id},data,{new:true});
+        const updatedTask=await Task.findOneAndUpdate({_id:taskId,owner:req.user.id},data,{new:true});
         if(!updatedTask){
             return res.status(404).json({
                 success:false,
@@ -145,7 +138,7 @@ export const updateTaskById=async(req,res)=>{
         res.json({success:true,data:updatedTask});
     } catch (error) {
         logger.warn('updateTaskById failed', { message: error?.message, userId: req.user?.id, taskId: req.params?.id });
-        const status = isPgClientError(error) ? 400 : 500;
+        const status = isMongooseValidationError(error) ? 400 : 500;
         res.status(status).json({
             success:false,
             message: status === 400 ? "Bad Request" : "Internal server error"
@@ -154,15 +147,15 @@ export const updateTaskById=async(req,res)=>{
 };
 export const deleteTask=async(req,res)=>{
     try{
-       const taskId = parsePositiveInt(req.params.id);
-       if (!taskId) {
+       const taskId = req.params.id;
+       if (!isValidObjectId(taskId)) {
             return res.status(400).json({
                 success:false,
                 message:"Invalid task id"
             });
        }
 
-       const deleted=await Task.findOneAndDelete({id:taskId,owner:req.user.id});
+       const deleted=await Task.findOneAndDelete({_id:taskId,owner:req.user.id});
        if(!deleted){
         return res.status(404).json({
             success:false,
