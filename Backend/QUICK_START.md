@@ -1,59 +1,38 @@
-# Quick Start - PostgreSQL Setup
+# Quick Start - MongoDB Setup
 
 ## 🚀 Fast Setup (5 Minutes)
 
-### 1. Install PostgreSQL
+### 1. Get MongoDB Connection String
 
-**Windows**: 
-- Download and install from https://www.postgresql.org/download/windows/
-- During installation, set a password for the `postgres` user
+Choose one option:
 
-**Mac**: 
+**Option A: MongoDB Atlas (Free Cloud Database - Recommended)**
+1. Go to https://cloud.mongodb.com
+2. Create a free account
+3. Create a new project and cluster (M0 is free)
+4. Click "Connect" and copy the connection string
+5. Format: `mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority`
+
+**Option B: Local MongoDB**
 ```bash
-brew install postgresql
-brew services start postgresql
+# Windows: Download from https://www.mongodb.com/try/download/community
+# Mac:
+brew tap mongodb/brew
+brew install mongodb-community
+brew services start mongodb-community
+
+# Linux:
+sudo apt-get install mongodb
+sudo service mongod start
 ```
+Connection string: `mongodb://localhost:27017/task_manager`
 
-**Linux**: 
-```bash
-sudo apt-get install postgresql
-sudo service postgresql start
-```
-
-### 2. Create Database
-
-Open terminal/command prompt:
-
-```bash
-# Login to PostgreSQL
-psql -U postgres
-
-# In psql, run these commands:
-CREATE DATABASE task_manager;
-CREATE USER taskmanager_user WITH PASSWORD 'password123';
-GRANT ALL PRIVILEGES ON DATABASE task_manager TO taskmanager_user;
-\c task_manager
-GRANT ALL ON SCHEMA public TO taskmanager_user;
-\q
-```
-
-### 3. Run Database Schema
-
-```bash
-# Navigate to Backend directory
-cd Backend
-
-# Run schema file
-psql -U taskmanager_user -d task_manager -f config/schema.sql
-# Enter password: password123
-```
-
-### 4. Update .env File
+### 2. Update .env File
 
 Create or edit `Backend/.env`:
 
 ```env
-DATABASE_URL=postgresql://taskmanager_user:password123@localhost:5432/task_manager
+MONGODB_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/task_manager?retryWrites=true&w=majority
 JWT_SECRET=your_jwt_secret_here
 PORT=4000
 NODE_ENV=development
@@ -61,15 +40,26 @@ NODE_ENV=development
 STREAK_TIMEZONE=UTC
 ```
 
-If you point `DATABASE_URL` to a hosted database like Neon, add `?sslmode=require` (or set `DB_SSL=true`).
+**Note**: If your MongoDB password contains special characters (@, #, $, %), URL-encode them:
+- `@` → `%40`
+- `#` → `%23`
+- `$` → `%24`
+- `%` → `%25`
 
-### 5. Start Server
+### 3. Install Dependencies
+
+```bash
+cd Backend
+npm install
+```
+
+### 4. Start Server
 
 ```bash
 npm start
 ```
 
-### 6. Test It
+### 5. Test It
 
 Open browser: http://localhost:4000/health
 
@@ -84,28 +74,27 @@ Should see:
 
 ## ✅ Done!
 
-Your Task Manager is now running on PostgreSQL!
+Your Task Manager is now running on MongoDB!
+
+Collections will be automatically created when you first use the app.
 
 ## Troubleshooting
 
 **Can't connect?**
-- Check PostgreSQL is running: `psql -U postgres`
-- Verify DATABASE_URL in .env
-- Check password is correct
+- Check your MongoDB connection string is correct
+- Verify username and password (URL-encode special characters)
+- For MongoDB Atlas: Check IP whitelist allows your IP (0.0.0.0/0 for anywhere)
+- Test connection: `npm run setup-db`
 
-**Permission denied?**
-```sql
--- Run in psql:
-\c task_manager
-GRANT ALL ON SCHEMA public TO taskmanager_user;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO taskmanager_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO taskmanager_user;
-```
+**Authentication failed?**
+- Verify MongoDB Atlas credentials are correct
+- Check username and password in connection string
+- Ensure special characters are URL-encoded
 
-**Tables missing?**
-```bash
-# Run schema file again
-psql -U taskmanager_user -d task_manager -f config/schema.sql
-```
+**Collections not created?**
+- They're created automatically on first use
+- If needed, manual creation: Collections are created when data is inserted
 
-For more detailed help, see [POSTGRESQL_SETUP.md](./POSTGRESQL_SETUP.md)
+## More Info
+
+For more detailed help, see [MONGODB_SETUP.md](./MONGODB_SETUP.md) or the main [README.md](../README.md)
