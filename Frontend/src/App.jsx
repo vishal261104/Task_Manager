@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, Outlet } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -12,14 +12,15 @@ import SignUp from './components/SignUp';
 import './index.css';
 import axios from 'axios';
 import { API_BASE } from './utils/api';
+import { useAuthStore } from './store/authStore';
 
 const App = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(() => {
-    const stored = localStorage.getItem('currentUser');
-    return stored ? JSON.parse(stored) : null;
-  });
-  const [authChecking, setAuthChecking] = useState(true);
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const authChecking = useAuthStore((state) => state.authChecking);
+  const setCurrentUser = useAuthStore((state) => state.setCurrentUser);
+  const setAuthChecking = useAuthStore((state) => state.setAuthChecking);
+  const logout = useAuthStore((state) => state.logout);
 
   const token = localStorage.getItem('token');
   const isAuthenticated = Boolean(token && currentUser);
@@ -48,7 +49,7 @@ const App = () => {
           headers: { Authorization: `Bearer ${storedToken}` },
         });
         if (!cancelled && data?.success && data?.user) {
-          setCurrentUser(prev => prev ?? {
+          setCurrentUser(currentUser ?? {
             id: data.user.id,
             email: data.user.email,
             name: data.user.name,
@@ -66,15 +67,7 @@ const App = () => {
 
     check();
     return () => { cancelled = true; };
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('currentUser');
-    }
-  }, [currentUser]);
+  }, [currentUser, setAuthChecking, setCurrentUser]);
 
   const handleAuthSubmit = data => {
     const resolved = data?.user ?? data ?? {};
@@ -92,9 +85,7 @@ const App = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    setCurrentUser(null);
+    logout();
     navigate('/login', { replace: true });
   };
 

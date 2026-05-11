@@ -35,11 +35,10 @@ A full-stack task management application that allows users to create, manage, an
 
 ## 🗄️ Database
 
-**PostgreSQL** - Relational database with:
-- Strong ACID compliance
-- Structured schema with foreign keys
-- Efficient querying and indexing
-- Better performance for complex relationships
+**MongoDB** - Document database with:
+- Flexible schemas for tasks and habits
+- Simple scaling for growth
+- Mongoose models for validation
 
 ## 📁 Project Structure
 
@@ -47,8 +46,7 @@ A full-stack task management application that allows users to create, manage, an
 Task_Manager/
 ├── Backend/
 │   ├── config/
-│   │   ├── db.js                 # PostgreSQL connection pool
-│   │   ├── schema.sql            # Database schema
+│   │   ├── db.js                 # MongoDB connection (Mongoose)
 │   │   └── badges.js             # Badge definitions
 │   ├── controller/
 │   │   ├── userController.js     # User authentication logic
@@ -68,8 +66,7 @@ Task_Manager/
 │   │   └── badgeRoute.js         # Badge endpoints
 │   ├── index.js                  # Express server entry point
 │   ├── QUICK_START.md            # Fast setup guide
-│   ├── POSTGRESQL_SETUP.md       # Detailed PostgreSQL setup
-│   ├── MIGRATION_SUMMARY.md      # MongoDB → PostgreSQL changes
+│   ├── MONGO_SETUP.md            # Detailed MongoDB setup
 │   └── package.json
 │
 └── Frontend/
@@ -106,7 +103,7 @@ Task_Manager/
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- PostgreSQL (local installation)
+- MongoDB (local) or MongoDB Atlas
 - npm or yarn
 
 ### Backend Setup
@@ -124,7 +121,7 @@ Task_Manager/
 3. Create a `.env` file in the Backend directory:
    ```env
    PORT=4000
-   DATABASE_URL=postgresql://taskmanager_user:password123@localhost:5432/task_manager
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/task_manager?retryWrites=true&w=majority
    JWT_SECRET=your_secret_key
    NODE_ENV=development
    # Optional: timezone used for streak "day" boundaries
@@ -168,7 +165,7 @@ The frontend will run on `http://localhost:5173`
 
 ### Backend
 - **Framework**: Express.js 5.1
-- **Database**: PostgreSQL (pg 8.x)
+- **Database**: MongoDB (mongoose 8.x)
 - **Authentication**: JWT (jsonwebtoken 9.0.2)
 - **Security**: bcryptjs for password hashing
 - **Validation**: validator.js
@@ -179,6 +176,7 @@ The frontend will run on `http://localhost:5173`
 - **Build Tool**: Vite
 - **Routing**: React Router DOM 7.9
 - **Styling**: Tailwind CSS 4.1 with Vite plugin
+- **State**: Zustand 5.x (auth state)
 - **HTTP Client**: Axios 1.12
 - **UI Icons**: Lucide React 0.545
 - **Notifications**: React Toastify 11.0
@@ -258,7 +256,7 @@ Deploy to:
 ## 🐛 Troubleshooting
 
 ### Backend issues
-- **PostgreSQL connection failed**: Check `DATABASE_URL` in `Backend/.env` and confirm Postgres is running
+- **MongoDB connection failed**: Check `MONGODB_URI` in `Backend/.env` and confirm MongoDB is reachable
 - **Port already in use**: Change the PORT in `.env` or kill the process using the port
 
 ### Frontend issues
@@ -270,7 +268,7 @@ Deploy to:
 ### Backend (.env)
 ```
 PORT=4000
-DATABASE_URL=postgresql://taskmanager_user:password123@localhost:5432/task_manager
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/task_manager?retryWrites=true&w=majority
 JWT_SECRET=your_secure_secret_key_here
 NODE_ENV=development
 STREAK_TIMEZONE=UTC

@@ -1,78 +1,33 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Zap, Flame } from 'lucide-react'
-import axios from 'axios'
 import DailyHabitItem from './DailyHabitItem'
 import AddDailyHabit from './AddDailyHabit'
 import StreakAnimation from './StreakAnimation'
-import { logger } from '../utils/logger'
-import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from '../utils/api'
-
-const HABITS_API_BASE = `${API_ROOT}/daily-habits`
+import { useHabitsStore } from '../store/habitsStore'
 
 const DailyHabitsList = ({ onLogout }) => {
-  const [habits, setHabits] = useState([])
-  const [loading, setLoading] = useState(true)
+  const habits = useHabitsStore((state) => state.habits)
+  const loading = useHabitsStore((state) => state.loading)
+  const progress = useHabitsStore((state) => state.progress)
+  const todayDate = useHabitsStore((state) => state.todayDate)
+  const fetchHabits = useHabitsStore((state) => state.fetchHabits)
+  const deleteHabit = useHabitsStore((state) => state.deleteHabit)
+
   const [showModal, setShowModal] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState(null)
-  const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0, streak: 0 })
-  const [todayDate, setTodayDate] = useState(null)
   const [showStreakAnimation, setShowStreakAnimation] = useState(false)
   const [streakData, setStreakData] = useState(null)
-
-  const getHeaders = useCallback(() => {
-    const headers = getStoredAuthHeaders()
-    if (!headers.Authorization) throw new Error('No auth token found')
-    return headers
-  }, [])
-
-  const fetchHabits = useCallback(async () => {
-    try {
-      setLoading(true)
-      const progressRes = await axios.get(`${HABITS_API_BASE}/progress`, { headers: getHeaders() })
-      const serverToday = progressRes?.data?.data?.date
-      setTodayDate(serverToday || null)
-
-      const { data } = await axios.get(`${HABITS_API_BASE}/gp`, { headers: getHeaders() })
-      const effectiveToday = serverToday || new Date().toISOString().split('T')[0]
-      
-      const habitsWithStatus = data.data.map(habit => ({
-        ...habit,
-        completedToday: habit.completions?.includes(effectiveToday) || false
-      }))
-      
-      setHabits(habitsWithStatus)
-
-      // Prefer backend progress (uses streak timezone), but keep UI consistent with the rendered habit statuses.
-      const completedCount = habitsWithStatus.filter(h => h.completedToday).length
-      const totalCount = habitsWithStatus.length
-      const backendStreak = progressRes?.data?.data?.streak || 0
-      setProgress({
-        total: totalCount,
-        completed: completedCount,
-        percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
-        streak: backendStreak
-      })
-    } catch (error) {
-      logger.warn('Failed to fetch daily habits', { status: error?.response?.status, message: error?.message })
-      if (error?.response?.status === 401) onLogout?.()
-    } finally {
-      setLoading(false)
-    }
-  }, [getHeaders, onLogout])
 
   useEffect(() => {
     fetchHabits()
   }, [fetchHabits])
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this habit?')) {
-      try {
-        await axios.delete(`${HABITS_API_BASE}/${id}/gp`, { headers: getHeaders() })
-        fetchHabits()
-      } catch (error) {
-        logger.warn('Failed to delete daily habit', { status: error?.response?.status, message: error?.message, habitId: id })
-        if (error?.response?.status === 401) onLogout?.()
-      }
+    if (!window.confirm('Are you sure you want to delete this habit?')) return
+    try {
+      await deleteHabit(id)
+    } catch (error) {
+      if (error?.response?.status === 401) onLogout?.()
     }
   }
 

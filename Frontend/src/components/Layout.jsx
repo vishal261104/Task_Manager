@@ -1,47 +1,19 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Outlet } from "react-router-dom"
 import { Circle, TrendingUp, Zap, Clock } from "lucide-react"
 import Navbar from "./Navbar"
 import Sidebar from "./Sidebar"
-import axios from "axios"
-import { API_BASE, getToken } from "../utils/api"
+import { useTasksStore } from "../store/tasksStore"
 
 const Layout = ({ user, onLogout }) => {
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const tasks = useTasksStore((state) => state.tasks)
+  const loading = useTasksStore((state) => state.loading)
+  const error = useTasksStore((state) => state.error)
+  const fetchTasks = useTasksStore((state) => state.fetchTasks)
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      const token = getToken()
-      if (!token) {
-     onLogout()
-    return
-      }
-
-      const { data } = await axios.get(`${API_BASE}/tasks/gp`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-
-      const arr = Array.isArray(data) ? data : 
-        Array.isArray(data?.tasks) ? data.tasks :
-        Array.isArray(data?.data) ? data.data : []
-
-      setTasks(arr)
-    } catch (err) {
-      setError(err.message || "Could not load tasks.")
-      if (err.response?.status === 401) onLogout()
-    } finally {
-      setLoading(false)
-    }
-  }, [onLogout])
-
-useEffect(() => {
-  fetchTasks()
-}, [fetchTasks]);
+  useEffect(() => {
+    fetchTasks()
+  }, [fetchTasks])
 
   const stats = useMemo(() => {
     const completedTasks = tasks.filter(t => 
