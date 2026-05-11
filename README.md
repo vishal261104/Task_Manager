@@ -91,6 +91,10 @@ Task_Manager/
     │   │   ├── Complete.jsx       # Completed tasks page
     │   │   ├── Dashboard.jsx      # Dashboard page
     │   │   └── Pending.jsx        # Pending tasks page
+   │   ├── store/
+   │   │   ├── authStore.js        # Auth state (Zustand)
+   │   │   ├── tasksStore.js       # Tasks state (Zustand)
+   │   │   └── habitsStore.js      # Habits state (Zustand)
     │   ├── App.jsx                # Root component
     │   ├── main.jsx               # React entry point
     │   └── index.css
@@ -176,7 +180,7 @@ The frontend will run on `http://localhost:5173`
 - **Build Tool**: Vite
 - **Routing**: React Router DOM 7.9
 - **Styling**: Tailwind CSS 4.1 with Vite plugin
-- **State**: Zustand 5.x (auth state)
+- **State**: Zustand 5.x (auth, tasks, habits)
 - **HTTP Client**: Axios 1.12
 - **UI Icons**: Lucide React 0.545
 - **Notifications**: React Toastify 11.0
