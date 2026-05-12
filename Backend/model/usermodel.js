@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   streak: { type: Number, default: 0 },
   last_streak_date: { type: String, default: null },
+  habitReminderDate: { type: String, default: null },
   badges: [badgeSchema]
 }, { timestamps: true });
 
@@ -65,7 +66,8 @@ const User = {
       email: user.email,
       password: user.password,
       streak: user.streak,
-      last_streak_date: user.last_streak_date
+      last_streak_date: user.last_streak_date,
+      habitReminderDate: user.habitReminderDate
     };
   },
 
@@ -77,7 +79,8 @@ const User = {
       name: user.name,
       email: user.email,
       streak: user.streak,
-      last_streak_date: user.last_streak_date
+      last_streak_date: user.last_streak_date,
+      habitReminderDate: user.habitReminderDate
     };
   },
 
@@ -96,6 +99,7 @@ const User = {
       email: user.email,
       streak: user.streak,
       last_streak_date: user.last_streak_date,
+      habitReminderDate: user.habitReminderDate,
       created_at: user.createdAt,
       updated_at: user.updatedAt,
       badges: user.badges.map(b => ({
@@ -118,8 +122,23 @@ const User = {
       name: user.name,
       email: user.email,
       streak: user.streak,
-      last_streak_date: user.last_streak_date
+      last_streak_date: user.last_streak_date,
+      habitReminderDate: user.habitReminderDate
     };
+  },
+
+  async listForReminders() {
+    const users = await UserModel.find({}, { name: 1, email: 1, habitReminderDate: 1 });
+    return users.map((user) => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      habitReminderDate: user.habitReminderDate || null
+    }));
+  },
+
+  async setHabitReminderDate(userId, dateLabel) {
+    await UserModel.findByIdAndUpdate(userId, { habitReminderDate: dateLabel });
   },
 
   async addBadge(userId, badge) {

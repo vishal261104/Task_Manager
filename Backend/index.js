@@ -9,6 +9,8 @@ import authRoutes from './routes/userRoute.js';
 import taskRouter from './routes/taskRoute.js';
 import dailyHabitRouter from './routes/dailyHabitRoute.js';
 import badgeRouter from './routes/badgeRoute.js';
+import reminderRouter from './routes/reminderRoute.js';
+import { scheduleReminders } from './services/reminderService.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -41,6 +43,7 @@ app.use('/api/user', authRoutes);
 app.use('/api/tasks', taskRouter);
 app.use('/api/daily-habits', dailyHabitRouter);
 app.use('/api/badges', badgeRouter);
+app.use('/api/reminders', reminderRouter);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
@@ -74,6 +77,7 @@ app.get('/health', async (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
+    scheduleReminders();
     app.listen(PORT, () => {
       logger.info('Server started', { port: PORT, env: process.env.NODE_ENV || 'development' });
     });

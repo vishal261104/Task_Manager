@@ -9,6 +9,7 @@ const taskSchema = new mongoose.Schema({
     default: 'Medium'
   },
   dueDate: { type: Date, default: null },
+  reminderSentAt: { type: Date, default: null },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   completed: { type: Boolean, default: false },
   status: {
@@ -28,6 +29,7 @@ const normalizeTaskRow = (doc) => {
     description: doc.description,
     priority: doc.priority,
     dueDate: doc.dueDate,
+    reminderSentAt: doc.reminderSentAt,
     owner: doc.owner,
     completed: doc.completed,
     status: doc.status,
@@ -58,6 +60,37 @@ const Task = {
   async find({ owner }) {
     const tasks = await TaskModel.find({ owner }).sort({ createdAt: -1 });
     return tasks.map(normalizeTaskRow);
+  },
+
+  async findDueForDate({ owner, start, end }) {
+    const tasks = await TaskModel.find({
+      owner,
+      completed: false,
+      dueDate: { $gte: start, $lte: end },
+      $or: [
+        { reminderSentAt: null },
+        { reminderSentAt: { $exists: false } },
+        { reminderSentAt: { $lt: start } }
+      ]
+    }).sort({ dueDate: 1 });
+    return tasks.map(normalizeTaskRow);
+  },
+
+  async findDueForDateAny({ owner, start, end }) {
+    const tasks = await TaskModel.find({
+      owner,
+      completed: false,
+      dueDate: { $gte: start, $lte: end }
+    }).sort({ dueDate: 1 });
+    return tasks.map(normalizeTaskRow);
+  },
+
+  async markReminded(taskIds) {
+    if (!Array.isArray(taskIds) || taskIds.length === 0) return;
+    await TaskModel.updateMany(
+      { _id: { $in: taskIds } },
+      { $set: { reminderSentAt: new Date() } }
+    );
   },
 
   async findOne({ _id, id, owner }) {
