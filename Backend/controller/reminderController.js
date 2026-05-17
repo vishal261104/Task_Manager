@@ -41,9 +41,17 @@ export const getRemindersNow = async (req, res) => {
       DailyHabit.find({ owner: req.user.id }),
     ]);
 
-    const habitsRemaining = habits.filter((habit) => !habit.completions?.includes(dateLabel)).length;
+    const habitsWithStatus = habits.map((habit) => ({
+      id: habit.id,
+      habitName: habit.habitName,
+      completedToday: habit.completions?.includes(dateLabel) || false,
+    }));
+
+    const habitsRemaining = habitsWithStatus.filter((h) => !h.completedToday).length;
+    const habitsTotal = habits.length;
+
     const taskIds = tasksDue.map((task) => task.id).sort();
-    const key = `${dateLabel}|${taskIds.join(",")}|${habitsRemaining}`;
+    const key = `${dateLabel}|t${taskIds.join(",")}|hr${habitsRemaining}`;
 
     res.json({
       success: true,
@@ -54,7 +62,9 @@ export const getRemindersNow = async (req, res) => {
         dueDate: task.dueDate,
         priority: task.priority,
       })),
+      habits: habitsWithStatus,
       habitsRemaining,
+      habitsTotal,
       key,
     });
   } catch (error) {

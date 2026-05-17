@@ -4,12 +4,14 @@ import { Circle, TrendingUp, Zap, Clock } from "lucide-react"
 import Navbar from "./Navbar"
 import Sidebar from "./Sidebar"
 import { useTasksStore } from "../store/tasksStore"
+import { useNotifications } from "../hooks/useNotifications"
 
 const Layout = ({ user, onLogout }) => {
   const tasks = useTasksStore((state) => state.tasks)
   const loading = useTasksStore((state) => state.loading)
   const error = useTasksStore((state) => state.error)
   const fetchTasks = useTasksStore((state) => state.fetchTasks)
+  const { permission, reminderData, loading: notifLoading, requestPermission } = useNotifications()
 
   useEffect(() => {
     fetchTasks()
@@ -74,7 +76,14 @@ const Layout = ({ user, onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={user} onLogout={onLogout} />
+      <Navbar
+        user={user}
+        onLogout={onLogout}
+        reminderData={reminderData}
+        notifLoading={notifLoading}
+        notifPermission={permission}
+        onRequestNotifPermission={requestPermission}
+      />
       <Sidebar user={user} tasks={tasks}/>
 
       <div className="ml-0 xl:ml-64 lg:ml-64 md:ml-16 pt-16 p-3 sm:p-4 md:p-4 transition-all duration-300">

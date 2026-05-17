@@ -36,25 +36,86 @@ const getUtcDayBounds = (isoDateOnly) => {
   return { start, end };
 };
 
-const buildReminderEmail = ({ name, dateLabel, tasksDue, habitsRemaining }) => {
-  const taskLines = tasksDue.map((task) => `- ${task.title}`);
-  const habitLine = habitsRemaining > 0
-    ? `You still have ${habitsRemaining} habit${habitsRemaining === 1 ? "" : "s"} to complete today.`
-    : "All habits completed so far. Great job!";
+const buildReminderEmail = ({ name, dateLabel, tasksDue, habits, habitsRemaining }) => {
+  const greeting = `Hi ${name || "there"},`;
+
+  // Tasks section
+  let taskSection;
+  if (tasksDue.length > 0) {
+    const taskLines = tasksDue.map((task) => {
+      const priority = task.priority ? ` [${task.priority}]` : "";
+      return `  • ${task.title}${priority}`;
+    });
+    taskSection = `📋 Tasks due today (${tasksDue.length}):\n${taskLines.join("\n")}`;
+  } else {
+    taskSection = "📋 No tasks due today — nice!";
+  }
+
+  // Habits section — always list every habit with its status
+  let habitSection;
+  if (habits.length > 0) {
+    const habitLines = habits.map((habit) => {
+      const done = habit.completions?.includes(dateLabel);
+      const icon = done ? "✅" : "⬜";
+      return `  ${icon} ${habit.habitName}`;
+    });
+    const summary = habitsRemaining > 0
+      ? `(${habitsRemaining} remaining)`
+      : "(all completed — great job!)";
+    habitSection = `🔄 Daily Habits ${summary}:\n${habitLines.join("\n")}`;
+  } else {
+    habitSection = "🔄 No daily habits set up yet.";
+  }
+
+  const text = [
+    greeting,
+    "",
+    `Here's your daily summary for ${dateLabel}:`,
+    "",
+    taskSection,
+    "",
+    habitSection,
+    "",
+    "Open TaskFlow to review your day. 🚀",
+  ].join("\n");
+
+  // HTML version for richer email clients
+  const taskHtml = tasksDue.length > 0
+    ? tasksDue.map((t) => {
+        const color = t.priority === "High" ? "#ef4444" : t.priority === "Medium" ? "#f59e0b" : "#22c55e";
+        return `<li style="padding:4px 0">${t.title} <span style="color:${color};font-size:12px">[${t.priority || "Medium"}]</span></li>`;
+      }).join("")
+    : '<li style="padding:4px 0;color:#6b7280">No tasks due today — nice!</li>';
+
+  const habitHtml = habits.length > 0
+    ? habits.map((h) => {
+        const done = h.completions?.includes(dateLabel);
+        const icon = done ? "✅" : "⬜";
+        const style = done ? "text-decoration:line-through;color:#9ca3af" : "color:#1f2937";
+        return `<li style="padding:4px 0;${style}">${icon} ${h.habitName}</li>`;
+      }).join("")
+    : '<li style="padding:4px 0;color:#6b7280">No daily habits set up yet.</li>';
+
+  const html = `
+    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#faf5ff;border-radius:12px">
+      <div style="text-align:center;margin-bottom:20px">
+        <span style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#d946ef,#8b5cf6,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent">TaskFlow</span>
+      </div>
+      <div style="background:#ffffff;border-radius:10px;padding:20px;border:1px solid #e9d5ff">
+        <p style="color:#374151;font-size:15px">Hi <strong>${name || "there"}</strong>,</p>
+        <p style="color:#6b7280;font-size:14px">Here's your daily summary for <strong>${dateLabel}</strong>:</p>
+        <h3 style="color:#7c3aed;font-size:14px;margin:16px 0 8px">📋 Tasks Due Today (${tasksDue.length})</h3>
+        <ul style="list-style:none;padding:0;margin:0">${taskHtml}</ul>
+        <h3 style="color:#7c3aed;font-size:14px;margin:16px 0 8px">🔄 Daily Habits ${habitsRemaining > 0 ? `(${habitsRemaining} remaining)` : "(all done ✨)"}</h3>
+        <ul style="list-style:none;padding:0;margin:0">${habitHtml}</ul>
+      </div>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:16px">Open TaskFlow to review your day 🚀</p>
+    </div>`;
 
   return {
-    subject: `TaskFlow reminder for ${dateLabel}`,
-    text: [
-      `Hi ${name || "there"},`,
-      "",
-      tasksDue.length
-        ? `Tasks due today (${tasksDue.length}):\n${taskLines.join("\n")}`
-        : "No tasks due today.",
-      "",
-      habitLine,
-      "",
-      "Open TaskFlow to review your day.",
-    ].join("\n"),
+    subject: `TaskFlow Daily Summary — ${dateLabel}`,
+    text,
+    html,
   };
 };
 
@@ -65,11 +126,18 @@ const sendUserReminders = async ({ user, dateLabel, start, end }) => {
   ]);
 
   const habitsRemaining = habits.filter((habit) => !habit.completions?.includes(dateLabel)).length;
-  const shouldSend = tasksDue.length > 0 || habitsRemaining > 0;
+
+  // Send if user has ANY habits (always inform about daily habits) OR has tasks due
+  const shouldSend = habits.length > 0 || tasksDue.length > 0;
 
   if (!shouldSend) return { tasksDue: 0, habitsRemaining: 0, sent: false };
 
-  if (user.habitReminderDate === dateLabel && tasksDue.length === 0) {
+  // Dedup: only skip if we already sent today AND nothing new to report
+  // (both task reminder and habit reminder already sent for today)
+  const habitAlreadySent = user.habitReminderDate === dateLabel;
+  const noNewTasks = tasksDue.length === 0;
+
+  if (habitAlreadySent && noNewTasks) {
     return { tasksDue: 0, habitsRemaining, sent: false };
   }
 
@@ -77,6 +145,7 @@ const sendUserReminders = async ({ user, dateLabel, start, end }) => {
     name: user.name,
     dateLabel,
     tasksDue,
+    habits,
     habitsRemaining,
   });
 
@@ -84,15 +153,15 @@ const sendUserReminders = async ({ user, dateLabel, start, end }) => {
     to: user.email,
     subject: email.subject,
     text: email.text,
+    html: email.html,
   });
 
   if (tasksDue.length > 0) {
     await Task.markReminded(tasksDue.map((task) => task.id));
   }
 
-  if (habitsRemaining > 0) {
-    await User.setHabitReminderDate(user.id, dateLabel);
-  }
+  // Always mark habit reminder as sent for today (even if 0 remaining)
+  await User.setHabitReminderDate(user.id, dateLabel);
 
   return { tasksDue: tasksDue.length, habitsRemaining, sent: true };
 };
@@ -105,13 +174,16 @@ export const runDailyReminders = async () => {
     const users = await User.listForReminders();
     if (!users.length) return;
 
+    let sentCount = 0;
     for (const user of users) {
       try {
-        await sendUserReminders({ user, dateLabel, start, end });
+        const result = await sendUserReminders({ user, dateLabel, start, end });
+        if (result.sent) sentCount++;
       } catch (error) {
         logger.warn("Reminder email failed", { userId: user.id, message: error?.message });
       }
     }
+    logger.info("Daily reminders completed", { totalUsers: users.length, emailsSent: sentCount, date: dateLabel });
   } catch (error) {
     logger.error("Reminder scheduler failed", { message: error?.message });
   }

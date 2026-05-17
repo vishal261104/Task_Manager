@@ -27,3 +27,7 @@
 .animate-slideUp {
   animation: slideUp 0.5s ease-out;
 }
+
+.border-l-3 {
+  border-left-width: 3px;
+}

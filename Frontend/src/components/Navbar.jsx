@@ -3,6 +3,7 @@ import { Settings, ChevronDown, LogOut, Zap, Flame, Award } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_BASE, getToken } from "../utils/api"
+import NotificationBell from "./NotificationBell"
 
 const FALLBACK_BADGES = [
   { name: "Starter", streakRequired: 3, icon: "🌱" },
@@ -25,7 +26,7 @@ const getNextBadge = (streak) => {
   return FALLBACK_BADGES.find(b => streak < b.streakRequired) || null
 }
 
-const Navbar = ({ user = {}, onLogout }) => {
+const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermission, onRequestNotifPermission }) => {
   const [menuOpen, setMenuOpen] = useState(false)
   const [streak, setStreak] = useState(0)
   const [badgeData, setBadgeData] = useState(null)
@@ -142,7 +143,7 @@ const Navbar = ({ user = {}, onLogout }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Mobile streak indicator (compact) */}
           <div
             className="flex sm:hidden items-center gap-1 px-2 py-1 rounded-full bg-orange-50 border border-orange-200/50 cursor-pointer"
@@ -153,6 +154,14 @@ const Navbar = ({ user = {}, onLogout }) => {
               {streak}
             </span>
           </div>
+
+          {/* Notification Bell */}
+          <NotificationBell
+            reminderData={reminderData}
+            loading={notifLoading}
+            permission={notifPermission}
+            onRequestPermission={onRequestNotifPermission}
+          />
 
           <button
             className="p-2 text-gray-600 hover:text-purple-500 transition-colors duration-300 hover:bg-purple-50 rounded-full"
