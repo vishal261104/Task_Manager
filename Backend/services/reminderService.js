@@ -5,7 +5,7 @@ import User from "../model/usermodel.js";
 import { sendEmail } from "../utils/email.js";
 import { logger } from "../utils/logger.js";
 
-const REMINDER_TIMEZONE = process.env.REMINDER_TIMEZONE || process.env.STREAK_TIMEZONE || "UTC";
+const REMINDER_TIMEZONE = process.env.REMINDER_TIMEZONE || process.env.STREAK_TIMEZONE || Intl.DateTimeFormat().resolvedOptions().timeZone;
 const REMINDER_CRON = process.env.REMINDER_CRON || "0 9 * * *";
 
 const getDateInTimeZone = (date, timeZone) => {

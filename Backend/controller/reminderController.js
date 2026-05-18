@@ -1,7 +1,8 @@
 import Task from "../model/taskModel.js";
 import DailyHabit from "../model/dailyHabitModel.js";
+import { runDailyReminders } from "../services/reminderService.js";
 
-const REMINDER_TIMEZONE = process.env.REMINDER_TIMEZONE || process.env.STREAK_TIMEZONE || "UTC";
+const REMINDER_TIMEZONE = process.env.REMINDER_TIMEZONE || process.env.STREAK_TIMEZONE || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const getDateInTimeZone = (date, timeZone) => {
   try {
@@ -71,6 +72,21 @@ export const getRemindersNow = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to load reminders",
+    });
+  }
+};
+
+export const triggerEmailReminders = async (req, res) => {
+  try {
+    await runDailyReminders();
+    res.json({
+      success: true,
+      message: "Email reminders triggered successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to trigger email reminders",
     });
   }
 };
