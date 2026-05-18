@@ -4,6 +4,7 @@ import { format, isToday } from "date-fns"
 import TaskModal from "./AddTask"
 import { getPriorityColor, getPriorityBadgeColor, TI_CLASSES, MENU_OPTIONS, } from "../assets/dummy"
 import { CheckCircle2, MoreVertical, Clock, Calendar } from "lucide-react"
+import { useTasksStore } from "../store/tasksStore"
 import { logger } from "../utils/logger"
 
 import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from "../utils/api"
@@ -11,6 +12,8 @@ import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from "..
 const TASKS_API_BASE = `${API_ROOT}/tasks`
 
 const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) => {
+  const optimisticUpdateTask = useTasksStore(state => state.optimisticUpdateTask);
+  const optimisticDeleteTask = useTasksStore(state => state.optimisticDeleteTask);
   const [showMenu, setShowMenu] = useState(false)
   const [isCompleted, setIsCompleted] = useState(
     [true, 1, "yes"].includes(
@@ -46,12 +49,16 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
       return
     }
     
+    // Optimistic Update
+    setIsCompleted(!isCompleted)
+    optimisticUpdateTask(task.id, { completed: newStatus })
+
     try {
       const url = `${TASKS_API_BASE}/${task.id}/gp`
       await axios.put(url, { completed: newStatus }, { headers: getAuthHeaders() })
-      setIsCompleted(!isCompleted)
-      onRefresh?.()
     } catch (err) {
+      setIsCompleted(isCompleted)
+      optimisticUpdateTask(task.id, { completed: isCompleted ? "Yes" : "No" })
       logger.warn('Task toggle failed', { taskId: task.id, status: err.response?.status })
       if (err.response?.status === 401) onLogout?.()
     }
@@ -64,10 +71,11 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
   }
 
   const handleDelete = async () => {
+    optimisticDeleteTask(task.id)
     try {
       await axios.delete(`${TASKS_API_BASE}/${task.id}/gp`, { headers: getAuthHeaders() })
-      onRefresh?.()
     } catch (err) {
+      onRefresh?.()
       logger.warn('Task delete failed', { taskId: task.id, status: err.response?.status })
       if (err.response?.status === 401) onLogout?.()
     }
@@ -164,7 +172,7 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
         isOpen={showEditModal}
         onClose={()=>setShowEditModal(false)}
         taskToEdit={task}
-        onSave={() => onRefresh?.()}
+        onSave={() => {}}
         onLogout={onLogout}
       />
     </>

@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, X, Save, Calendar, AlignLeft, Flag, CheckCircle } from 'lucide-react';
+import { useTasksStore } from '../store/tasksStore';
 import { baseControlClasses, priorityStyles, DEFAULT_TASK } from '../assets/dummy';
 import { API_BASE as API_ROOT, getAuthHeaders as getStoredAuthHeaders } from '../utils/api';
 
 const TASKS_API_BASE = `${API_ROOT}/tasks`;
 
 const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
+  const addTaskLocally = useTasksStore(state => state.addTaskLocally);
+  const optimisticUpdateTask = useTasksStore(state => state.optimisticUpdateTask);
   const [taskData, setTaskData] = useState(DEFAULT_TASK);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -66,6 +69,11 @@ const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
         throw new Error(err.message || 'Failed to save task');
       }
       const saved = await resp.json();
+      if (isEdit) {
+        optimisticUpdateTask(saved.id, saved);
+      } else {
+        addTaskLocally(saved);
+      }
       onSave?.(saved);
       onClose();
     } catch (err) {

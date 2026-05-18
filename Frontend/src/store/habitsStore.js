@@ -19,7 +19,8 @@ export const useHabitsStore = create((set, get) => ({
   progress: { total: 0, completed: 0, percentage: 0, streak: 0 },
   todayDate: null,
   fetchHabits: async () => {
-    set({ loading: true, error: null });
+    const isFirstLoad = get().habits.length === 0;
+    if (isFirstLoad) set({ loading: true, error: null });
     try {
       const progressRes = await axios.get(`${HABITS_API_BASE}/progress`, { headers: getHeaders() });
       const serverToday = progressRes?.data?.data?.date;
@@ -73,5 +74,65 @@ export const useHabitsStore = create((set, get) => ({
       }
       throw error;
     }
+  },
+
+  optimisticToggleHabit: (id, completedToday, streak) => {
+    set((state) => {
+      const habits = state.habits.map((h) =>
+        (h.id || h._id) === id ? { ...h, completedToday } : h
+      );
+      const completedCount = habits.filter((h) => h.completedToday).length;
+      const totalCount = habits.length;
+      return {
+        habits,
+        progress: {
+          ...state.progress,
+          completed: completedCount,
+          total: totalCount,
+          percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+          streak: streak !== undefined ? streak : state.progress.streak,
+        },
+      };
+    });
+  },
+
+  optimisticUpdateHabit: (id, updates) => {
+    set((state) => ({
+      habits: state.habits.map((h) => ((h.id || h._id) === id ? { ...h, ...updates } : h)),
+    }));
+  },
+
+  addHabitLocally: (habit) => {
+    set((state) => {
+      const habits = [habit, ...state.habits];
+      const completedCount = habits.filter((h) => h.completedToday).length;
+      const totalCount = habits.length;
+      return {
+        habits,
+        progress: {
+          ...state.progress,
+          completed: completedCount,
+          total: totalCount,
+          percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+        },
+      };
+    });
+  },
+
+  deleteHabitLocally: (id) => {
+    set((state) => {
+      const habits = state.habits.filter((h) => (h.id || h._id) !== id);
+      const completedCount = habits.filter((h) => h.completedToday).length;
+      const totalCount = habits.length;
+      return {
+        habits,
+        progress: {
+          ...state.progress,
+          completed: completedCount,
+          total: totalCount,
+          percentage: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+        },
+      };
+    });
   },
 }));

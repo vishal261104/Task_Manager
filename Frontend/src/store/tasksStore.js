@@ -17,7 +17,8 @@ export const useTasksStore = create((set) => ({
   setTasks: (tasks) => set({ tasks }),
   setError: (error) => set({ error }),
   fetchTasks: async () => {
-    set({ loading: true, error: null });
+    const isFirstLoad = useTasksStore.getState().tasks.length === 0;
+    if (isFirstLoad) set({ loading: true, error: null });
     try {
       const token = getToken();
       if (!token) {
@@ -39,5 +40,23 @@ export const useTasksStore = create((set) => ({
     } finally {
       set({ loading: false });
     }
+  },
+
+  optimisticUpdateTask: (id, updates) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) => ((t.id || t._id) === id ? { ...t, ...updates } : t)),
+    }));
+  },
+
+  optimisticDeleteTask: (id) => {
+    set((state) => ({
+      tasks: state.tasks.filter((t) => (t.id || t._id) !== id),
+    }));
+  },
+
+  addTaskLocally: (task) => {
+    set((state) => ({
+      tasks: [task, ...state.tasks],
+    }));
   },
 }));

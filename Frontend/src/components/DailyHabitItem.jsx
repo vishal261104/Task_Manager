@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Trash2, Edit2, CheckCircle2, Circle } from 'lucide-react'
+import { useHabitsStore } from '../store/habitsStore'
 import axios from 'axios'
 import { API_BASE as API_ROOT } from '../utils/api'
 
@@ -8,11 +9,16 @@ const HABITS_API_BASE = `${API_ROOT}/daily-habits`
 const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, completedToday, todayDate }) => {
   const [isToggling, setIsToggling] = useState(false)
 
+  const optimisticToggleHabit = useHabitsStore(state => state.optimisticToggleHabit)
+
   const handleToggle = async () => {
     try {
       setIsToggling(true)
       const token = localStorage.getItem('token')
       const today = todayDate || new Date().toISOString().split('T')[0]
+
+      // Optimistic update
+      optimisticToggleHabit(habit.id, !completedToday)
 
       const response = await axios.post(
         `${HABITS_API_BASE}/${habit.id}/toggle`,
@@ -21,13 +27,11 @@ const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, complete
       )
       
       if (response.data.streak) {
-        onRefresh(response.data.streak)
-      } else {
-        onRefresh()
+        optimisticToggleHabit(habit.id, !completedToday, response.data.streak)
       }
     } catch (error) {
+      optimisticToggleHabit(habit.id, completedToday)
       if (error?.response?.status === 401) onLogout?.()
-      onRefresh()
     } finally {
       setIsToggling(false)
     }

@@ -19,6 +19,9 @@ const taskSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+taskSchema.index({ owner: 1, createdAt: -1 });
+taskSchema.index({ owner: 1, dueDate: 1 });
+
 const TaskModel = mongoose.model('Task', taskSchema);
 
 const normalizeTaskRow = (doc) => {

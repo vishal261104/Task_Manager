@@ -9,6 +9,8 @@ const dailyHabitSchema = new mongoose.Schema({
   completions: [{ type: String }]
 }, { timestamps: true });
 
+dailyHabitSchema.index({ owner: 1, createdAt: -1 });
+
 const DailyHabitModel = mongoose.model('DailyHabit', dailyHabitSchema);
 
 const normalizeHabitRow = (doc) => {

@@ -12,6 +12,7 @@ const DailyHabitsList = ({ onLogout }) => {
   const todayDate = useHabitsStore((state) => state.todayDate)
   const fetchHabits = useHabitsStore((state) => state.fetchHabits)
   const deleteHabit = useHabitsStore((state) => state.deleteHabit)
+  const deleteHabitLocally = useHabitsStore((state) => state.deleteHabitLocally)
 
   const [showModal, setShowModal] = useState(false)
   const [selectedHabit, setSelectedHabit] = useState(null)
@@ -24,10 +25,12 @@ const DailyHabitsList = ({ onLogout }) => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this habit?')) return
+    deleteHabitLocally(id)
     try {
       await deleteHabit(id)
     } catch (error) {
       if (error?.response?.status === 401) onLogout?.()
+      fetchHabits() // rollback
     }
   }
 

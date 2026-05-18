@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { X, Plus } from 'lucide-react'
 import axios from 'axios'
-
+import { useHabitsStore } from '../store/habitsStore'
 import { API_BASE as API_ROOT } from '../utils/api'
 
 const API_BASE = `${API_ROOT}/daily-habits`
 
 const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit, onLogout }) => {
+  const addHabitLocally = useHabitsStore(state => state.addHabitLocally);
+  const optimisticUpdateHabit = useHabitsStore(state => state.optimisticUpdateHabit);
   const [formData, setFormData] = useState({
     habitName: '',
     description: '',
@@ -53,13 +55,15 @@ const AddDailyHabit = ({ isOpen, onClose, habitToEdit, onSubmit, onLogout }) => 
       if (!token) throw new Error('No auth token found')
 
       if (habitToEdit) {
-        await axios.put(`${API_BASE}/${habitToEdit.id}/gp`, formData, {
+        const res = await axios.put(`${API_BASE}/${habitToEdit.id}/gp`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         })
+        optimisticUpdateHabit(habitToEdit.id, res.data?.data || res.data)
       } else {
-        await axios.post(`${API_BASE}/gp`, formData, {
+        const res = await axios.post(`${API_BASE}/gp`, formData, {
           headers: { Authorization: `Bearer ${token}` }
         })
+        addHabitLocally(res.data?.data || res.data)
       }
 
       onSubmit()
