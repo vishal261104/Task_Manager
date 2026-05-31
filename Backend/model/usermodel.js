@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema({
   badges: [badgeSchema]
 }, { timestamps: true });
 
+userSchema.index({ 'badges.name': 1 });
+userSchema.index({ habitReminderDate: 1 });
+
 const UserModel = mongoose.model('User', userSchema);
 
 const User = {

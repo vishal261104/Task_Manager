@@ -21,6 +21,7 @@ const taskSchema = new mongoose.Schema({
 
 taskSchema.index({ owner: 1, createdAt: -1 });
 taskSchema.index({ owner: 1, dueDate: 1 });
+taskSchema.index({ owner: 1, completed: 1, dueDate: 1, reminderSentAt: 1 });
 
 const TaskModel = mongoose.model('Task', taskSchema);
 

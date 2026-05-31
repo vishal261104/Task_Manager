@@ -27,7 +27,8 @@ const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, complete
       )
       
       if (response.data.streak) {
-        optimisticToggleHabit(habit.id, !completedToday, response.data.streak)
+        optimisticToggleHabit(habit.id, !completedToday, response.data.streak.newStreak)
+        onRefresh?.(response.data.streak)
       }
     } catch (error) {
       optimisticToggleHabit(habit.id, completedToday)
