@@ -22,6 +22,7 @@ const taskSchema = new mongoose.Schema({
 taskSchema.index({ owner: 1, createdAt: -1 });
 taskSchema.index({ owner: 1, dueDate: 1 });
 taskSchema.index({ owner: 1, completed: 1, dueDate: 1, reminderSentAt: 1 });
+taskSchema.index({ owner: 1, completed: 1, createdAt: -1 });
 
 const TaskModel = mongoose.model('Task', taskSchema);
 
@@ -62,7 +63,7 @@ const Task = {
   },
 
   async find({ owner }) {
-    const tasks = await TaskModel.find({ owner }).sort({ createdAt: -1 });
+    const tasks = await TaskModel.find({ owner }).sort({ createdAt: -1 }).lean();
     return tasks.map(normalizeTaskRow);
   },
 
@@ -76,7 +77,7 @@ const Task = {
         { reminderSentAt: { $exists: false } },
         { reminderSentAt: { $lt: start } }
       ]
-    }).sort({ dueDate: 1 });
+    }).sort({ dueDate: 1 }).lean();
     return tasks.map(normalizeTaskRow);
   },
 
@@ -85,7 +86,7 @@ const Task = {
       owner,
       completed: false,
       dueDate: { $gte: start, $lte: end }
-    }).sort({ dueDate: 1 });
+    }).sort({ dueDate: 1 }).lean();
     return tasks.map(normalizeTaskRow);
   },
 
@@ -99,7 +100,7 @@ const Task = {
 
   async findOne({ _id, id, owner }) {
     const taskId = id || _id;
-    const task = await TaskModel.findOne({ _id: taskId, owner });
+    const task = await TaskModel.findOne({ _id: taskId, owner }).lean();
     return normalizeTaskRow(task);
   },
 

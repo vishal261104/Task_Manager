@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Settings, ChevronDown, LogOut, Zap, Flame, Award } from "lucide-react"
+import { Settings, ChevronDown, LogOut, Zap, Flame, Award, Pin } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import { API_BASE, getToken } from "../utils/api"
 import NotificationBell from "./NotificationBell"
+import RemindersPanel from "./RemindersPanel"
 
 const FALLBACK_BADGES = [
   { name: "Starter", streakRequired: 3, icon: "🌱" },
@@ -30,6 +31,7 @@ const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermissi
   const [menuOpen, setMenuOpen] = useState(false)
   const [streak, setStreak] = useState(0)
   const [badgeData, setBadgeData] = useState(null)
+  const [remindersPanelOpen, setRemindersPanelOpen] = useState(false)
   const navigate = useNavigate()
   const menuRef = useRef(null)
 
@@ -73,6 +75,7 @@ const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermissi
   const nextBadge = getNextBadge(streak)
 
   return (
+  <>
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200 font-sans">
       <div className="flex items-center justify-between px-4 py-3 md:px-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-2 cursor-pointer group" onClick={() => navigate("/")}>
@@ -155,6 +158,16 @@ const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermissi
             </span>
           </div>
 
+          {/* Pinned Reminders button */}
+          <button
+            onClick={() => setRemindersPanelOpen(true)}
+            className="relative p-2 text-gray-600 hover:text-amber-500 transition-colors duration-300 hover:bg-amber-50 rounded-full"
+            aria-label="Pinned Reminders"
+            title="Pinned Reminders"
+          >
+            <Pin className="w-5 h-5" />
+          </button>
+
           {/* Notification Bell */}
           <NotificationBell
             reminderData={reminderData}
@@ -232,6 +245,12 @@ const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermissi
         </div>
       </div>
     </header>
+
+    <RemindersPanel
+      isOpen={remindersPanelOpen}
+      onClose={() => setRemindersPanelOpen(false)}
+    />
+  </>
   )
 }
 

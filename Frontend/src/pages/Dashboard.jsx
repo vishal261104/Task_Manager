@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router-dom"
 import { Plus, Filter, Home as HomeIcon, Calendar as CalendarIcon, Flame } from "lucide-react"
 import TaskModal from "../components/AddTask"
 import TaskItem from "../components/TaskItem"
+import PersistentReminders from "../components/PersistentReminders"
 
 import {
   WRAPPER, HEADER, ADD_BUTTON, STATS_GRID, STAT_CARD, ICON_WRAPPER, VALUE_CLASS, LABEL_CLASS,
@@ -80,6 +81,9 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
+
+      {/* Ambient persistent reminders strip */}
+      <PersistentReminders />
 
       <div className="space-y-6">
         <div className={FILTER_WRAPPER}>

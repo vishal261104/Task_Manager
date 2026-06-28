@@ -37,7 +37,7 @@ const User = {
 
   async findOne({ email, _id }) {
     if (_id) {
-      const user = await UserModel.findOne({ email, _id: { $ne: _id.$ne } });
+      const user = await UserModel.findOne({ email, _id: { $ne: _id.$ne } }).lean();
       if (!user) return null;
       return {
         id: user._id,
@@ -48,7 +48,7 @@ const User = {
         last_streak_date: user.last_streak_date
       };
     }
-    const user = await UserModel.findOne({ email });
+    const user = await UserModel.findOne({ email }).lean();
     if (!user) return null;
     return {
       id: user._id,
@@ -61,7 +61,7 @@ const User = {
   },
 
   async findById(userId) {
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId).lean();
     if (!user) return null;
     return {
       id: user._id,
@@ -94,7 +94,7 @@ const User = {
   },
 
   async findByIdWithBadges(userId) {
-    const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId).lean();
     if (!user) return null;
     return {
       id: user._id,
@@ -131,7 +131,7 @@ const User = {
   },
 
   async listForReminders() {
-    const users = await UserModel.find({}, { name: 1, email: 1, habitReminderDate: 1 });
+    const users = await UserModel.find({}, { name: 1, email: 1, habitReminderDate: 1 }).lean();
     return users.map((user) => ({
       id: user._id,
       name: user.name,

@@ -48,17 +48,17 @@ const DailyHabit = {
   },
 
   async find({ owner }) {
-    const habits = await DailyHabitModel.find({ owner }).sort({ createdAt: -1 });
+    const habits = await DailyHabitModel.find({ owner }).sort({ createdAt: -1 }).lean();
     return habits.map(normalizeHabitRow);
   },
 
   async findOne({ _id, owner }) {
-    const habit = await DailyHabitModel.findOne({ _id, owner });
+    const habit = await DailyHabitModel.findOne({ _id, owner }).lean();
     return normalizeHabitRow(habit);
   },
 
   async findById(habitId) {
-    const habit = await DailyHabitModel.findById(habitId);
+    const habit = await DailyHabitModel.findById(habitId).lean();
     return normalizeHabitRow(habit);
   },
 
