@@ -79,11 +79,28 @@ export const getBadgeMapping = async (req, res) => {
             progress: user.streak >= badge.streakRequired ? 100 : Math.min(100, (user.streak / badge.streakRequired) * 100),
         }));
 
+        const enrichedBadges = (user.badges || []).map(badge => {
+            const milestone = BADGE_MILESTONES.find(m => m.name === badge.name);
+            return {
+                name: badge.name,
+                earnedAt: badge.earned_at || badge.earnedAt,
+                streakRequired: badge.streak_required ?? badge.streakRequired,
+                icon: milestone?.icon || '🏅',
+                description: milestone?.description || '',
+            };
+        });
+        enrichedBadges.sort((a, b) => new Date(b.earnedAt || b.earned_at) - new Date(a.earnedAt || a.earned_at));
+
         res.json({
             success: true,
             data: {
                 badges: badgeMapping,
                 currentStreak: user.streak,
+                userBadges: {
+                    badges: enrichedBadges,
+                    streak: user.streak,
+                    nextBadge: getNextBadge(user.streak),
+                }
             }
         });
     } catch (error) {

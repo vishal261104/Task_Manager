@@ -82,8 +82,17 @@ export const createDailyHabit=async(req,res)=>{
 };
 export const getDailyHabits=async(req,res)=>{
     try{
-        const habits=await dailyHabit.find({owner:req.user.id});
-        res.json({success:true,data:habits});
+        const [habits, user] = await Promise.all([
+            dailyHabit.find({owner:req.user.id}),
+            User.findById(req.user.id)
+        ]);
+        const today = getDateInTimeZone(new Date(), STREAK_TIMEZONE);
+        res.json({
+            success:true,
+            data:habits,
+            streak: user?.streak || 0,
+            date: today
+        });
     } catch (error) {
         logger.warn('getDailyHabits failed', { message: error?.message, userId: req.user?.id });
         res.status(500).json({

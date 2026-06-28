@@ -22,19 +22,18 @@ export const useHabitsStore = create((set, get) => ({
     const isFirstLoad = get().habits.length === 0;
     if (isFirstLoad) set({ loading: true, error: null });
     try {
-      const progressRes = await axios.get(`${HABITS_API_BASE}/progress`, { headers: getHeaders() });
-      const serverToday = progressRes?.data?.data?.date;
+      const { data: res } = await axios.get(`${HABITS_API_BASE}/gp`, { headers: getHeaders() });
+      const serverToday = res?.date;
       const effectiveToday = serverToday || new Date().toISOString().split("T")[0];
 
-      const { data } = await axios.get(`${HABITS_API_BASE}/gp`, { headers: getHeaders() });
-      const habitsWithStatus = (data?.data || []).map((habit) => ({
+      const habitsWithStatus = (res?.data || []).map((habit) => ({
         ...habit,
         completedToday: habit.completions?.includes(effectiveToday) || false,
       }));
 
       const completedCount = habitsWithStatus.filter((h) => h.completedToday).length;
       const totalCount = habitsWithStatus.length;
-      const backendStreak = progressRes?.data?.data?.streak || 0;
+      const backendStreak = res?.streak || 0;
 
       set({
         habits: habitsWithStatus,

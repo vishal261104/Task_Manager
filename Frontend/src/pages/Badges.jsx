@@ -34,16 +34,11 @@ const Badges = () => {
   const fetchBadges = useCallback(async () => {
     try {
       setLoading(true);
-      const [badgesRes, mappingRes] = await Promise.all([
-        axios.get(`${API_BASE}/user`, { headers: getHeaders() }),
-        axios.get(`${API_BASE}/mapping`, { headers: getHeaders() }),
-      ]);
+      const { data: res } = await axios.get(`${API_BASE}/mapping`, { headers: getHeaders() });
 
-      if (badgesRes.data.success) {
-        setUserBadges(badgesRes.data.data);
-      }
-      if (mappingRes.data.success) {
-        setBadgeMapping(mappingRes.data.data);
+      if (res.success) {
+        setUserBadges(res.data.userBadges);
+        setBadgeMapping(res.data);
       }
     } catch (error) {
       logger.warn('Failed to fetch badges', { status: error?.response?.status, message: error?.message });
