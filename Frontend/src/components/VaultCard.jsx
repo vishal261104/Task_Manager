@@ -34,7 +34,7 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
         </button>
       </div>
 
-      <div className="flex items-start gap-3 mb-3 pr-16">
+      <div className="flex items-start gap-3 mb-3 pr-8">
         <div className={`p-2 rounded-lg shrink-0 ${
           isNote ? 'bg-blue-100 text-blue-600' :
           isImage ? 'bg-fuchsia-100 text-fuchsia-600' :
@@ -45,7 +45,7 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
           {isPdf && <File className="w-5 h-5" />}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-800 truncate" title={item.title}>
+          <h3 className="font-semibold text-gray-800 line-clamp-2 break-words" title={item.title}>
             {item.title}
           </h3>
           {isPdf && item.fileName && (
