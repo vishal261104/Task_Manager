@@ -105,7 +105,7 @@ const User = {
       habitReminderDate: user.habitReminderDate,
       created_at: user.createdAt,
       updated_at: user.updatedAt,
-      badges: user.badges.map(b => ({
+      badges: (user.badges || []).map(b => ({
         name: b.name,
         earned_at: b.earnedAt,
         streak_required: b.streakRequired

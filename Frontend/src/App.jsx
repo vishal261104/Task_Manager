@@ -9,6 +9,8 @@ import Badges from './pages/Badges';
 import Profile from './components/Profile';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
+import Vault from './pages/Vault';
+import VaultList from './pages/VaultList';
 import './index.css';
 import axios from 'axios';
 import { API_BASE } from './utils/api';
@@ -126,6 +128,10 @@ const App = () => {
         <Route path="complete" element={<Complete />} />
         <Route path="daily-habits" element={<DailyHabits />} />
         <Route path="badges" element={<Badges />} />
+        <Route path="vault" element={<Vault />} />
+        <Route path="vault/all" element={<VaultList />} />
+        <Route path="vault/inbox" element={<VaultList />} />
+        <Route path="vault/favorites" element={<VaultList />} />
         <Route
           path="profile"
           element={<Profile user={currentUser} setCurrentUser={setCurrentUser} onLogout={handleLogout} />}

@@ -9,6 +9,11 @@ import {
     Clock,
     Calendar,
     Trophy,
+    LibraryBig,
+    Archive,
+    Star,
+    Tags,
+    LayoutGrid
 } from "lucide-react"
 
 export const baseControlClasses =
@@ -59,6 +64,16 @@ export const menuItems = [
     { text: "Dashboard", path: "/", icon: <Home className="w-5 h-5" /> },
     { text: "Pending Tasks", path: "/pending", icon: <ListChecks className="w-5 h-5" /> },
     { text: "Completed Tasks", path: "/complete", icon: <CheckCircle2 className="w-5 h-5" /> },
+    { 
+        text: "Vault", 
+        path: "/vault", 
+        icon: <LibraryBig className="w-5 h-5" />,
+        subItems: [
+            { text: "All", path: "/vault/all", icon: <LayoutGrid className="w-4 h-4" /> },
+            { text: "Inbox", path: "/vault/inbox", icon: <Archive className="w-4 h-4" /> },
+            { text: "Favorites", path: "/vault/favorites", icon: <Star className="w-4 h-4" /> },
+        ]
+    },
     { text: "Daily Habits", path: "/daily-habits", icon: <Calendar className="w-5 h-5" /> },
     { text: "Badges", path: "/badges", icon: <Trophy className="w-5 h-5" /> },
 ]

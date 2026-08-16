@@ -34,10 +34,11 @@ const Sidebar = ({ user, tasks }) => {
 
   const renderMenuItems = (isMobile = false) => (
     <ul className="space-y-2">
-      {menuItems.map(({ text, path, icon }) => (
+      {menuItems.map(({ text, path, icon, subItems }) => (
         <li key={text}>
           <NavLink
             to={path}
+            end={!subItems} // Use 'end' so parent doesn't stay active if we want exact matching, though for sub routes we might want it active. Let's omit 'end' if it has subItems so the parent stays active.
             className={({ isActive }) =>
               [
                 LINK_CLASSES.base,
@@ -45,13 +46,37 @@ const Sidebar = ({ user, tasks }) => {
                 isMobile ? "justify-start" : "lg:justify-start"
               ].join(" ")
             }
-            onClick={() => setMobileOpen(false)}
+            onClick={() => {
+              if (isMobile && !subItems) setMobileOpen(false);
+            }}
           >
             <span className={LINK_CLASSES.icon}>{icon}</span>
             <span className={`${isMobile ? 'block' : 'hidden lg:block'} ${LINK_CLASSES.text}`}>
               {text}
             </span>
           </NavLink>
+          {subItems && (
+            <ul className={`mt-1 space-y-1 ml-6 border-l-2 border-purple-100 ${isMobile ? 'block' : 'hidden lg:block'}`}>
+              {subItems.map(subItem => (
+                <li key={subItem.text}>
+                  <NavLink
+                    to={subItem.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-3 py-2 text-sm rounded-r-lg transition-colors ${
+                        isActive
+                          ? 'text-purple-700 bg-purple-50 font-medium border-l-2 border-purple-500 -ml-[2px]'
+                          : 'text-gray-500 hover:text-purple-600 hover:bg-purple-50/50'
+                      }`
+                    }
+                    onClick={() => isMobile && setMobileOpen(false)}
+                  >
+                    <span className="shrink-0">{subItem.icon}</span>
+                    {subItem.text}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
         </li>
       ))}
     </ul>

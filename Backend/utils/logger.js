@@ -44,7 +44,11 @@ export const logger = {
   },
   error(message, meta) {
     if (!shouldLog('error')) return;
-    console.error(`[error] ${message}`, meta ?? '');
+    const logStr = `[error] ${message} ${meta ? JSON.stringify(meta) : ''}\n`;
+    console.error(logStr);
+    try {
+      import('fs').then(fs => fs.appendFileSync('error.log', logStr));
+    } catch(e) {}
   },
   child(baseMeta) {
     return {

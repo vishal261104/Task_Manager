@@ -11,6 +11,7 @@ import dailyHabitRouter from './routes/dailyHabitRoute.js';
 import badgeRouter from './routes/badgeRoute.js';
 import reminderRouter from './routes/reminderRoute.js';
 import persistentReminderRouter from './routes/persistentReminderRoute.js';
+import vaultRouter from './routes/vaultRoute.js';
 import { scheduleReminders } from './services/reminderService.js';
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/daily-habits', dailyHabitRouter);
 app.use('/api/badges', badgeRouter);
 app.use('/api/reminders', reminderRouter);
 app.use('/api/persistent-reminders', persistentReminderRouter);
+app.use('/api/vault', vaultRouter);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
