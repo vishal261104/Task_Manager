@@ -15,10 +15,10 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
       onClick={() => onClick(item)}
     >
       {/* Top right actions */}
-      <div className="absolute top-3 right-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute -top-3 -right-3 flex items-center gap-2 z-10" onClick={(e) => e.stopPropagation()}>
         <button 
           onClick={() => onToggleFavorite(item._id, !item.isFavorite)}
-          className={`p-1.5 rounded-full transition-colors ${item.isFavorite ? 'text-yellow-500 hover:bg-yellow-50' : 'text-gray-400 hover:text-yellow-500 hover:bg-purple-50'}`}
+          className={`p-2 rounded-full transition-colors bg-white shadow-sm border border-purple-100 ${item.isFavorite ? 'text-yellow-500 hover:bg-yellow-50' : 'text-gray-400 hover:text-yellow-500 hover:bg-purple-50'}`}
         >
           <Star className={`w-4 h-4 ${item.isFavorite ? 'fill-current' : ''}`} />
         </button>
@@ -28,13 +28,13 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
               onDelete(item._id);
             }
           }}
-          className="p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+          className="p-2 rounded-full bg-white shadow-sm border border-red-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex items-start gap-3 mb-3 pr-8">
+      <div className="flex items-start gap-3 mb-3">
         <div className={`p-2 rounded-lg shrink-0 ${
           isNote ? 'bg-blue-100 text-blue-600' :
           isImage ? 'bg-fuchsia-100 text-fuchsia-600' :
