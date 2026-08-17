@@ -87,8 +87,8 @@ const Layout = ({ user, onLogout }) => {
       <Sidebar user={user} tasks={tasks}/>
 
       <div className="ml-0 xl:ml-64 lg:ml-64 md:ml-16 pt-16 p-3 sm:p-4 md:p-4 transition-all duration-300">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-          <div className="xl:col-span-2 space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="xl:col-span-3 space-y-3 sm:space-y-4">
             <Outlet context={{ tasks, refreshTasks: fetchTasks, onLogout }} />
           </div>
 
