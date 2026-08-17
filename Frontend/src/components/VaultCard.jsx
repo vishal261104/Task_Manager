@@ -58,7 +58,7 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 mt-3">
+      <div className="flex flex-wrap gap-1.5 mt-auto pt-3">
         {item.tags && item.tags.length > 0 ? (
           item.tags.slice(0, 3).map(tag => (
             <span key={tag._id} className="text-[10px] md:text-xs font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md">
@@ -74,7 +74,7 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
       </div>
 
       {/* Bottom area */}
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-1.5 text-xs text-gray-400 font-medium">
           <Clock className="w-3.5 h-3.5" />
           <span>{timeAgo}</span>
