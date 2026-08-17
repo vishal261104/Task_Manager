@@ -28,7 +28,7 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
               {isImage && <ImageIcon className="w-5 h-5" />}
               {isPdf && <File className="w-5 h-5" />}
             </div>
-            <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-1 break-words" title={item.title}>
+            <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-2 break-words" title={item.title}>
               {item.title}
             </h3>
           </div>
@@ -42,21 +42,6 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
               {item.description}
             </p>
           )}
-
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {item.tags && item.tags.length > 0 ? (
-              item.tags.slice(0, 3).map(tag => (
-                <span key={tag._id} className="text-[10px] md:text-xs font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md">
-                  {tag.name}
-                </span>
-              ))
-            ) : null}
-            {item.tags && item.tags.length > 3 && (
-              <span className="text-[10px] md:text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                +{item.tags.length - 3}
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Right column: Image Thumbnail */}
@@ -66,10 +51,25 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
             target="_blank" 
             rel="noopener noreferrer" 
             onClick={(e) => e.stopPropagation()}
-            className="w-20 h-16 md:w-28 md:h-20 shrink-0 bg-gray-100 rounded-lg overflow-hidden block hover:opacity-90 transition-opacity mt-1"
+            className="w-16 h-12 md:w-24 md:h-16 shrink-0 bg-gray-100 rounded-lg overflow-hidden block hover:opacity-90 transition-opacity mt-1"
           >
             <img src={item.fileUrl} alt={item.title} className="w-full h-full object-cover" />
           </a>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mt-3">
+        {item.tags && item.tags.length > 0 ? (
+          item.tags.slice(0, 3).map(tag => (
+            <span key={tag._id} className="text-[10px] md:text-xs font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md">
+              {tag.name}
+            </span>
+          ))
+        ) : null}
+        {item.tags && item.tags.length > 3 && (
+          <span className="text-[10px] md:text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
+            +{item.tags.length - 3}
+          </span>
         )}
       </div>
 
