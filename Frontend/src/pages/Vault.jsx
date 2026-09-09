@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Image as ImageIcon, File, Star, Plus, Archive, ChevronRight, Search } from 'lucide-react';
+import { FileText, Image as ImageIcon, File, Star, Plus, Archive, ChevronRight } from 'lucide-react';
 import { useVaultStore } from '../store/vaultStore';
 import VaultCard from '../components/VaultCard';
 import QuickCaptureModal from '../components/QuickCaptureModal';
@@ -9,22 +9,12 @@ const VaultHub = () => {
   const navigate = useNavigate();
   const { vaultItems, fetchVaultItems, loading, updateVaultItem, deleteVaultItem } = useVaultStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchVaultItems();
   }, [fetchVaultItems]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    navigate(`/vault/all${searchQuery.trim() ? `?search=${encodeURIComponent(searchQuery)}` : ''}`);
-  };
 
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    navigate(`/vault/all${value.trim() ? `?search=${encodeURIComponent(value)}` : ''}`);
-  };
 
   const handleToggleFavorite = async (id, isFavorite) => {
     const formData = new FormData();
@@ -63,18 +53,6 @@ const VaultHub = () => {
         </button>
       </div>
 
-      <form onSubmit={handleSearch} className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-purple-400" />
-        </div>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="block w-full pl-10 pr-3 py-3 border border-purple-100 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out sm:text-sm shadow-sm"
-          placeholder="Search your Vault..."
-        />
-      </form>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div 
