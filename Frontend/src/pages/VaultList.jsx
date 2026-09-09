@@ -218,7 +218,7 @@ const VaultList = () => {
               <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
                 <FileText className="w-8 h-8 text-purple-300" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-1">Your Vault Hub is empty</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-1">Your Vault is empty</h3>
               <p className="text-gray-500 mb-6">Save notes, screenshots and PDFs here so you can find them whenever you need them.</p>
               <button
                 onClick={() => setIsModalOpen(true)}

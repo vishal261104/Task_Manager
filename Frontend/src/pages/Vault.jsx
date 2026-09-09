@@ -17,9 +17,13 @@ const VaultHub = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/vault/all?search=${encodeURIComponent(searchQuery)}`);
-    }
+    navigate(`/vault/all${searchQuery.trim() ? `?search=${encodeURIComponent(searchQuery)}` : ''}`);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    navigate(`/vault/all${value.trim() ? `?search=${encodeURIComponent(value)}` : ''}`);
   };
 
   const handleToggleFavorite = async (id, isFavorite) => {
@@ -47,7 +51,7 @@ const VaultHub = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
-            📚 Vault Hub
+            📚 Vault
           </h1>
           <p className="text-sm text-gray-500 mt-1">Store and organize your important Vault</p>
         </div>
@@ -66,7 +70,7 @@ const VaultHub = () => {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           className="block w-full pl-10 pr-3 py-3 border border-purple-100 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out sm:text-sm shadow-sm"
           placeholder="Search your Vault..."
         />
