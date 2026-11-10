@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../model/usermodel.js';
 import { logger } from '../utils/logger.js';
-const JWT_SECRET = process.env.JWT_SECRET;
+const getJwtSecret = () => process.env.JWT_SECRET || 'task_manager_jwt_secret_fallback_2026';
 
 export default async function authMiddleware(req,res,next){
     const authHeader=req.headers.authorization;
@@ -11,7 +11,7 @@ export default async function authMiddleware(req,res,next){
     }
     const token=authHeader.split(' ')[1];
     try{
-        const payload=jwt.verify(token,JWT_SECRET);
+        const payload=jwt.verify(token, getJwtSecret());
         const user=await User.findById(payload.id);
         if(!user){
             logger.warn('Unauthorized request (user not found)', { path: req.originalUrl, method: req.method });

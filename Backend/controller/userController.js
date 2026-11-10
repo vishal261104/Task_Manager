@@ -3,58 +3,64 @@ import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
-const JWT_SECRET = process.env.JWT_SECRET;
-const TOKEN_EXPIRES='24h';
-const createToken=(userId)=>{
-    return jwt.sign({id:userId},JWT_SECRET,{expiresIn:TOKEN_EXPIRES});
-}
+const getJwtSecret = () => process.env.JWT_SECRET || 'task_manager_jwt_secret_fallback_2026';
+const TOKEN_EXPIRES = '24h';
+const createToken = (userId) => {
+    return jwt.sign({ id: userId }, getJwtSecret(), { expiresIn: TOKEN_EXPIRES });
+};
+
 export async function registerUser(req,res){
-    const{name,email,password}=req.body;
-    if(!name || !email ||!password){
+    let { name, email, password } = req.body || {};
+    if (!name || !email || !password) {
         return res.status(400).json({success:false,message:"Please fill all the details"});
     }
-    if(!validator.isEmail(email)){
+    name = typeof name === 'string' ? name.trim() : name;
+    email = typeof email === 'string' ? email.trim() : email;
+
+    if (!validator.isEmail(email)) {
         return res.status(400).json({success:false,message:"Please enter a valid email"});
     }
-    if(!validator.isStrongPassword(password)){
+    if (!validator.isStrongPassword(password)) {
         return res.status(400).json({success:false,message:"Please enter a strong password"});
     }
-    if(password.length<8){
+    if (password.length < 8) {
         return res.status(400).json({success:false,message:"Password must be at least 8 characters"});
     }
-    try{
-        if(await User.findOne({email})){
+    try {
+        if (await User.findOne({ email })) {
             return res.status(409).json({success:false,message:"User already exists"});
         }
-        const hashed=await bcrypt.hash(password,10);
-        const user=await User.create({name,email,password:hashed});
-        const token=createToken(user.id);
+        const hashed = await bcrypt.hash(password, 10);
+        const user = await User.create({ name, email, password: hashed });
+        const token = createToken(user.id);
         return res.status(201).json({success:true,message:"User registered successfully",token,user:{name:user.name,email:user.email,id:user.id}});
-    }catch(error){
+    } catch(error) {
         logger.error('registerUser failed', { message: error?.message, email });
         return res.status(500).json({success:false,message:"Internal server error"});
     }
 }
 
-
-
 export async function loginUser(req,res){
-    const{email,password}=req.body;
-    if(!email ||!password){
+    let { email, password } = req.body || {};
+    if (!email || !password) {
         return res.status(400).json({success:false,message:"Please fill all the details"});
     }
-    try{
-        const user =await User.findOne({email});
-        if(!user){
+    email = typeof email === 'string' ? email.trim() : email;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
             return res.status(401).json({success:false,message:"Invalid email or password"});
         }
-        const match=await bcrypt.compare(password,user.password);
-        if(!match){
+        let match = await bcrypt.compare(password, user.password);
+        if (!match && typeof password === 'string') {
+            match = await bcrypt.compare(password.trim(), user.password);
+        }
+        if (!match) {
             return res.status(401).json({success:false,message:"Invalid email or password"});
         }
-        const token=createToken(user.id);
+        const token = createToken(user.id);
         return res.status(200).json({success:true,message:"User logged in successfully",token,user:{name:user.name,email:user.email,id:user.id}});
-    }catch(error){
+    } catch(error) {
         logger.error('loginUser failed', { message: error?.message, email });
         return res.status(500).json({success:false,message:"Internal server error"});
     }

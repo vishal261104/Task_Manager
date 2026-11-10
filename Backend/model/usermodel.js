@@ -36,8 +36,13 @@ const User = {
   },
 
   async findOne({ email, _id }) {
+    const cleanEmail = typeof email === 'string' ? email.trim() : email;
     if (_id) {
-      const user = await UserModel.findOne({ email, _id: { $ne: _id.$ne } }).lean();
+      let user = await UserModel.findOne({ email: cleanEmail, _id: { $ne: _id.$ne } }).lean();
+      if (!user && typeof cleanEmail === 'string') {
+        const escaped = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        user = await UserModel.findOne({ email: { $regex: new RegExp(`^${escaped}$`, 'i') }, _id: { $ne: _id.$ne } }).lean();
+      }
       if (!user) return null;
       return {
         id: user._id,
@@ -48,7 +53,11 @@ const User = {
         last_streak_date: user.last_streak_date
       };
     }
-    const user = await UserModel.findOne({ email }).lean();
+    let user = await UserModel.findOne({ email: cleanEmail }).lean();
+    if (!user && typeof cleanEmail === 'string') {
+      const escaped = cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      user = await UserModel.findOne({ email: { $regex: new RegExp(`^${escaped}$`, 'i') } }).lean();
+    }
     if (!user) return null;
     return {
       id: user._id,
