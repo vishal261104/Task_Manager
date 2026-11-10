@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Zap, Flame } from 'lucide-react'
 import DailyHabitItem from './DailyHabitItem'
 import AddDailyHabit from './AddDailyHabit'
@@ -23,7 +23,7 @@ const DailyHabitsList = ({ onLogout }) => {
     fetchHabits()
   }, [fetchHabits])
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this habit?')) return
     deleteHabitLocally(id)
     try {
@@ -32,24 +32,24 @@ const DailyHabitsList = ({ onLogout }) => {
       if (error?.response?.status === 401) onLogout?.()
       fetchHabits() // rollback
     }
-  }
+  }, [deleteHabitLocally, deleteHabit, onLogout, fetchHabits])
 
-  const handleEdit = (habit) => {
+  const handleEdit = useCallback((habit) => {
     setSelectedHabit(habit)
     setShowModal(true)
-  }
+  }, [])
 
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     setSelectedHabit(null)
     setShowModal(true)
-  }
+  }, [])
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setShowModal(false)
     setSelectedHabit(null)
-  }
+  }, [])
 
-  const handleHabitToggle = async (streakResult) => {
+  const handleHabitToggle = useCallback(async (streakResult) => {
     await fetchHabits()
     
     if (streakResult && streakResult.streakUpdated) {
@@ -59,12 +59,12 @@ const DailyHabitsList = ({ onLogout }) => {
       })
       setShowStreakAnimation(true)
     }
-  }
+  }, [fetchHabits])
 
-  const handleStreakAnimationClose = () => {
+  const handleStreakAnimationClose = useCallback(() => {
     setShowStreakAnimation(false)
     setStreakData(null)
-  }
+  }, [])
 
   const getMotivationalMessage = () => {
     if (progress.total === 0) return "Add your first habit to get started!"

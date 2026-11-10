@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Image as ImageIcon, File, Star, Plus, Archive, ChevronRight } from 'lucide-react';
 import { useVaultStore } from '../store/vaultStore';
@@ -14,27 +14,25 @@ const VaultHub = () => {
     fetchVaultItems();
   }, [fetchVaultItems]);
 
-
-
-  const handleToggleFavorite = async (id, isFavorite) => {
+  const handleToggleFavorite = useCallback(async (id, isFavorite) => {
     const formData = new FormData();
     formData.append('isFavorite', isFavorite);
     await updateVaultItem(id, formData);
-  };
+  }, [updateVaultItem]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     await deleteVaultItem(id);
-  };
+  }, [deleteVaultItem]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     notes: vaultItems.filter(item => item.type === 'NOTE').length,
     images: vaultItems.filter(item => item.type === 'IMAGE').length,
     pdfs: vaultItems.filter(item => item.type === 'PDF').length,
     favorites: vaultItems.filter(item => item.isFavorite).length,
-  };
+  }), [vaultItems]);
 
-  const inboxItems = vaultItems.filter(item => item.isInbox).slice(0, 4);
-  const recentItems = vaultItems.slice(0, 4);
+  const inboxItems = useMemo(() => vaultItems.filter(item => item.isInbox).slice(0, 4), [vaultItems]);
+  const recentItems = useMemo(() => vaultItems.slice(0, 4), [vaultItems]);
 
   return (
     <div className="p-4 md:p-6 min-h-screen overflow-hidden space-y-6">

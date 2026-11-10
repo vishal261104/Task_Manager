@@ -81,7 +81,7 @@ const TaskModal = ({ isOpen, onClose, taskToEdit, onSave, onLogout }) => {
     } finally {
       setLoading(false);
     }
-  }, [taskData, today, getHeaders, onLogout, onSave, onClose]);
+  }, [taskData, today, getHeaders, onLogout, onSave, onClose, addTaskLocally, optimisticUpdateTask]);
 
   if (!isOpen) return null;
 

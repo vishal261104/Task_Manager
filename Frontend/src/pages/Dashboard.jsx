@@ -46,11 +46,15 @@ const Dashboard = () => {
     }
   }), [tasks, filter])
 
-  const handleTaskSave = useCallback(() => {
-    refreshTasks()
+  const handleModalClose = useCallback(() => {
     setShowModal(false)
     setSelectedTask(null)
-  }, [refreshTasks])
+  }, [])
+
+  const handleTaskSave = useCallback(() => {
+    refreshTasks()
+    handleModalClose()
+  }, [refreshTasks, handleModalClose])
 
   return (
     <div className={WRAPPER}>
@@ -130,7 +134,7 @@ const Dashboard = () => {
 
       <TaskModal
         isOpen={showModal || !!selectedTask}
-        onClose={() => { setShowModal(false); setSelectedTask(null); }}
+        onClose={handleModalClose}
         taskToEdit={selectedTask}
         onSave={handleTaskSave}
       />

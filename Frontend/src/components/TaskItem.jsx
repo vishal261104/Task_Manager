@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import axios from "axios"
 import { format, isToday } from "date-fns"
 import TaskModal from "./AddTask"
@@ -22,6 +22,7 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
   )
   const [showEditModal, setShowEditModal] = useState(false)
   const [subtasks, setSubtasks] = useState(task.subtasks || [])
+  const [isOperating, setIsOperating] = useState(false)
 
   useEffect(() => {
     setIsCompleted(
@@ -42,6 +43,7 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
     : getPriorityColor(task.priority).split(" ")[0]
 
   const handleComplete = async () => {
+    if (isOperating) return
     const newStatus = isCompleted ? "No" : "Yes"
     
     if (!task.id) {
@@ -49,6 +51,7 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
       return
     }
     
+    setIsOperating(true)
     // Optimistic Update
     setIsCompleted(!isCompleted)
     optimisticUpdateTask(task.id, { completed: newStatus })
@@ -61,6 +64,8 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
       optimisticUpdateTask(task.id, { completed: isCompleted ? "Yes" : "No" })
       logger.warn('Task toggle failed', { taskId: task.id, status: err.response?.status })
       if (err.response?.status === 401) onLogout?.()
+    } finally {
+      setIsOperating(false)
     }
   }
 
@@ -71,6 +76,8 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
   }
 
   const handleDelete = async () => {
+    if (isOperating) return
+    setIsOperating(true)
     optimisticDeleteTask(task.id)
     try {
       await axios.delete(`${TASKS_API_BASE}/${task.id}/gp`, { headers: getAuthHeaders() })
@@ -78,6 +85,8 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
       onRefresh?.()
       logger.warn('Task delete failed', { taskId: task.id, status: err.response?.status })
       if (err.response?.status === 401) onLogout?.()
+    } finally {
+      setIsOperating(false)
     }
   }
 
@@ -92,7 +101,8 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
           {showCompleteCheckbox && (
             <button
               onClick={handleComplete}
-              className={`${TI_CLASSES.completeBtn} ${isCompleted ? 'text-green-500' : 'text-gray-300'}`}
+              disabled={isOperating}
+              className={`${TI_CLASSES.completeBtn} ${isCompleted ? 'text-green-500' : 'text-gray-300'} disabled:opacity-50`}
             >
               <CheckCircle2
                 size={18}
@@ -179,4 +189,4 @@ const TaskItem = ({ task, onRefresh, onLogout, showCompleteCheckbox = true }) =>
   )
 }
 
-export default TaskItem;
+export default memo(TaskItem);

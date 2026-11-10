@@ -30,7 +30,6 @@ const getNextBadge = (streak) => {
 const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermission, onRequestNotifPermission }) => {
   const [menuOpen, setMenuOpen] = useState(false)
   const [streak, setStreak] = useState(0)
-  const [badgeData, setBadgeData] = useState(null)
   const [remindersPanelOpen, setRemindersPanelOpen] = useState(false)
   const navigate = useNavigate()
   const menuRef = useRef(null)
@@ -50,7 +49,6 @@ const Navbar = ({ user = {}, onLogout, reminderData, notifLoading, notifPermissi
       })
       if (data.success) {
         setStreak(data.data.streak || 0)
-        setBadgeData(data.data)
       }
     } catch {
       // silently fail — streak display is non-critical

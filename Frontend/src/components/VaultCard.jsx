@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FileText, Image as ImageIcon, File, Star, Clock, MoreVertical, Tag as TagIcon, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -104,4 +104,4 @@ const VaultCard = ({ item, onToggleFavorite, onClick, onDelete }) => {
   );
 };
 
-export default VaultCard;
+export default memo(VaultCard);

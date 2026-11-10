@@ -27,9 +27,11 @@ const vaultItemSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
+vaultItemSchema.index({ owner: 1, createdAt: -1 });
 vaultItemSchema.index({ owner: 1, type: 1 });
 vaultItemSchema.index({ owner: 1, isFavorite: 1 });
 vaultItemSchema.index({ owner: 1, isInbox: 1 });
+vaultItemSchema.index({ owner: 1, tags: 1 });
 
 export const Tag = mongoose.model('Tag', tagSchema);
 export const VaultItem = mongoose.model('VaultItem', vaultItemSchema);

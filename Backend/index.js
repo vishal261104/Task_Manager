@@ -28,13 +28,23 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
   const start = Date.now();
+  
+  // Track response finish
   res.on('finish', () => {
+    const duration = Date.now() - start;
     if (res.statusCode >= 400) {
       logger.warn('HTTP request failed', {
         method: req.method,
         path: req.originalUrl,
         status: res.statusCode,
-        ms: Date.now() - start,
+        ms: duration,
+      });
+    } else if (duration > 300) {
+      logger.warn('Slow API request detected', {
+        method: req.method,
+        path: req.originalUrl,
+        status: res.statusCode,
+        ms: duration,
       });
     }
   });

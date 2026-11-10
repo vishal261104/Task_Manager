@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, memo } from 'react'
 import { Trash2, Edit2, CheckCircle2, Circle } from 'lucide-react'
 import { useHabitsStore } from '../store/habitsStore'
 import axios from 'axios'
@@ -100,4 +100,4 @@ const DailyHabitItem = ({ habit, onDelete, onEdit, onRefresh, onLogout, complete
   )
 }
 
-export default DailyHabitItem
+export default memo(DailyHabitItem);

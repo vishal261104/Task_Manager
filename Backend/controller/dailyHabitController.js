@@ -3,6 +3,7 @@ import dailyHabit from '../model/dailyHabitModel.js';
 import User from '../model/usermodel.js';
 import { BADGE_MILESTONES, getEarnedBadges } from '../config/badges.js';
 import { logger } from '../utils/logger.js';
+import { cache } from '../utils/cache.js';
 
 const STREAK_TIMEZONE = process.env.STREAK_TIMEZONE || 'UTC';
 
@@ -187,14 +188,12 @@ const isBeforeEOD = (today, timeZone) => {
 
 const checkAndUpdateStreak = async (userId, today) => {
     try {
-        const user = await User.findById(userId);
-        if (!user) {
-            return null;
-        }
+        const [user, habits] = await Promise.all([
+            User.findById(userId),
+            dailyHabit.find({ owner: userId })
+        ]);
 
-        const habits = await dailyHabit.find({ owner: userId });
-
-        if (habits.length === 0) {
+        if (!user || habits.length === 0) {
             return null;
         }
 
@@ -241,6 +240,7 @@ const checkAndUpdateStreak = async (userId, today) => {
         }
 
         await User.updateStreak(userId, newStreak, today);
+        cache.del(`badgeMapping:${userId}`);
 
         const earnedBadges = getEarnedBadges(newStreak);
         const userWithBadges = await User.findByIdWithBadges(userId);
@@ -249,12 +249,17 @@ const checkAndUpdateStreak = async (userId, today) => {
 
         for (const badge of earnedBadges) {
             if (!existingBadgeNames.includes(badge.name)) {
-                await User.addBadge(userId, {
-                    name: badge.name,
-                    streakRequired: badge.streakRequired,
-                });
                 newBadges.push(badge);
             }
+        }
+
+        if (newBadges.length > 0) {
+            await Promise.all(newBadges.map(badge =>
+                User.addBadge(userId, {
+                    name: badge.name,
+                    streakRequired: badge.streakRequired,
+                })
+            ));
         }
 
         return {
@@ -318,7 +323,6 @@ export const toggleCompletion=async(req,res)=>{
         
         let streakResult = null;
         if (wasCompleted) {
-            await new Promise(resolve => setTimeout(resolve, 50));
             streakResult = await checkAndUpdateStreak(req.user.id, effectiveDate);
         }
         
@@ -339,12 +343,13 @@ export const toggleCompletion=async(req,res)=>{
 export const getHabitProgress=async(req,res)=>{
     try{
         const today = getDateInTimeZone(new Date(), STREAK_TIMEZONE);
-        const habits=await dailyHabit.find({owner:req.user.id});
+        const [habits, user] = await Promise.all([
+            dailyHabit.find({owner:req.user.id}),
+            User.findById(req.user.id)
+        ]);
         const totalHabits=habits.length;
         const completedToday=habits.filter(h=>Array.isArray(h.completions) && h.completions.includes(today)).length;
         const percentage=totalHabits>0?Math.round((completedToday/totalHabits)*100):0;
-
-        const user = await User.findById(req.user.id);
         
         res.json({
             success:true,

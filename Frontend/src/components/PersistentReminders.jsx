@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { Plus, Pencil, BellOff, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePersistentRemindersStore } from '../store/remindersStore';
 import AddReminderModal from './AddReminderModal';
 
-const ReminderItem = ({ reminder, onEdit, onSnooze, onDelete }) => {
+const ReminderItem = memo(({ reminder, onEdit, onSnooze, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const isLong = reminder.text.length > 48;
 
@@ -45,7 +45,7 @@ const ReminderItem = ({ reminder, onEdit, onSnooze, onDelete }) => {
       </div>
     </div>
   );
-};
+});
 
 const PersistentReminders = () => {
   const { visible, all, loading, fetch, add, edit, remove, snooze } = usePersistentRemindersStore();
@@ -59,13 +59,13 @@ const PersistentReminders = () => {
     return () => clearTimeout(t);
   }, [fetch]);
 
-  const openAdd = () => { setEditTarget(null); setModalOpen(true); };
-  const handleEdit = (r) => { setEditTarget(r); setModalOpen(true); };
-  const handleModalClose = () => { setModalOpen(false); setEditTarget(null); };
-  const handleSave = async (text) => {
+  const openAdd = useCallback(() => { setEditTarget(null); setModalOpen(true); }, []);
+  const handleEdit = useCallback((r) => { setEditTarget(r); setModalOpen(true); }, []);
+  const handleModalClose = useCallback(() => { setModalOpen(false); setEditTarget(null); }, []);
+  const handleSave = useCallback(async (text) => {
     if (editTarget) await edit(editTarget.id, text);
     else await add(text);
-  };
+  }, [editTarget, edit, add]);
 
   const hiddenCount =
     all.filter((r) => !r.snoozedUntil || new Date(r.snoozedUntil).getTime() <= Date.now())

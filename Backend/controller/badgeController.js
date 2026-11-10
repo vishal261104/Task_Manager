@@ -1,6 +1,7 @@
 import User from '../model/usermodel.js';
 import { BADGE_MILESTONES, getNextBadge } from '../config/badges.js';
 import { logger } from '../utils/logger.js';
+import { cache } from '../utils/cache.js';
 
 export const getUserBadges = async (req, res) => {
     try {
@@ -63,6 +64,12 @@ export const getBadgeMapping = async (req, res) => {
             });
         }
         
+        const cacheKey = `badgeMapping:${req.user.id}`;
+        const cached = cache.get(cacheKey);
+        if (cached) {
+            return res.json({ success: true, data: cached });
+        }
+
         const user = await User.findByIdWithBadges(req.user.id);
         if (!user) {
             return res.status(404).json({
@@ -91,17 +98,21 @@ export const getBadgeMapping = async (req, res) => {
         });
         enrichedBadges.sort((a, b) => new Date(b.earnedAt || b.earned_at) - new Date(a.earnedAt || a.earned_at));
 
+        const responseData = {
+            badges: badgeMapping,
+            currentStreak: user.streak,
+            userBadges: {
+                badges: enrichedBadges,
+                streak: user.streak,
+                nextBadge: getNextBadge(user.streak),
+            }
+        };
+
+        cache.set(cacheKey, responseData, 60);
+
         res.json({
             success: true,
-            data: {
-                badges: badgeMapping,
-                currentStreak: user.streak,
-                userBadges: {
-                    badges: enrichedBadges,
-                    streak: user.streak,
-                    nextBadge: getNextBadge(user.streak),
-                }
-            }
+            data: responseData
         });
     } catch (error) {
         logger.error('getBadgeMapping failed', { message: error?.message, userId: req.user?.id });

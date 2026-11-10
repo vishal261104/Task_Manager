@@ -27,7 +27,12 @@ export const connectDB = async () => {
       throw new Error('Missing MONGODB_URI (or DATABASE_URL) environment variable');
     }
 
-    await mongoose.connect(connectionString);
+    await mongoose.connect(connectionString, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
 
     const source = process.env.MONGODB_URI ? 'MONGODB_URI' : (process.env.DATABASE_URL ? 'DATABASE_URL' : 'unknown');
     logger.info('Database connected', { source });

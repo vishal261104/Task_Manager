@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Filter, SortDesc, SortAsc, Award, Plus, ListChecks, Clock } from 'lucide-react';
 import TaskItem from '../components/TaskItem';
@@ -28,6 +28,12 @@ const PendingTasks = () => {
       return order[b.priority.toLowerCase()] - order[a.priority.toLowerCase()];
     });
   }, [tasks, sortBy]);
+
+  const handleModalClose = useCallback(() => {
+    setShowModal(false);
+    setSelectedTask(null);
+    refreshTasks();
+  }, [refreshTasks]);
 
   return (
     <div className={layoutClasses.container}>
@@ -91,7 +97,7 @@ const PendingTasks = () => {
       </div>
       <TaskModal
         isOpen={!!selectedTask || showModal}
-        onClose={() => { setShowModal(false); setSelectedTask(null); refreshTasks(); }}
+        onClose={handleModalClose}
         taskToEdit={selectedTask}
       />
     </div>

@@ -58,7 +58,22 @@ export const useVaultStore = create((set, get) => ({
   },
 
   updateVaultItem: async (id, formData) => {
-    set({ loading: true, error: null });
+    // Check if this is a simple favorite toggle to apply optimistic UI update
+    const isFavToggle = formData instanceof FormData && formData.has('isFavorite') && [...formData.keys()].length === 1;
+    let prevItems = null;
+
+    if (isFavToggle) {
+      const isFavValue = formData.get('isFavorite') === 'true';
+      prevItems = get().vaultItems;
+      set((state) => ({
+        vaultItems: state.vaultItems.map((item) =>
+          item._id === id ? { ...item, isFavorite: isFavValue } : item
+        ),
+      }));
+    } else {
+      set({ loading: true, error: null });
+    }
+
     try {
       const response = await axios.put(`${API_BASE}/vault/${id}`, formData, {
         headers: {
@@ -76,31 +91,35 @@ export const useVaultStore = create((set, get) => ({
         }));
         return updatedItem;
       } else {
+        if (prevItems) set({ vaultItems: prevItems });
         set({ error: 'Failed to update item', loading: false });
         throw new Error('Failed to update item');
       }
     } catch (error) {
+      if (prevItems) set({ vaultItems: prevItems });
       set({ error: error.message, loading: false });
       throw error;
     }
   },
 
   deleteVaultItem: async (id) => {
-    set({ loading: true, error: null });
+    // Optimistic deletion: immediately remove from UI for instantaneous response
+    const previousItems = get().vaultItems;
+    set((state) => ({
+      vaultItems: state.vaultItems.filter((item) => item._id !== id),
+    }));
+
     try {
       const response = await axios.delete(`${API_BASE}/vault/${id}`, {
         headers: getAuthHeaders(),
       });
-      if (response.data.success) {
-        set((state) => ({
-          vaultItems: state.vaultItems.filter((item) => item._id !== id),
-          loading: false,
-        }));
-      } else {
-        set({ error: 'Failed to delete item', loading: false });
+      if (!response.data.success) {
+        // Rollback on server rejection
+        set({ vaultItems: previousItems, error: 'Failed to delete item' });
       }
     } catch (error) {
-      set({ error: error.message, loading: false });
+      // Rollback on network failure
+      set({ vaultItems: previousItems, error: error.message });
     }
   },
 

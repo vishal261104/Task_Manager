@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Image as ImageIcon, File, Star, ArrowLeft, Search, Archive, Plus } from 'lucide-react';
 import { useVaultStore } from '../store/vaultStore';
@@ -26,10 +26,20 @@ const VaultList = () => {
   }, [fetchVaultItems]);
 
   const [localSearch, setLocalSearch] = useState(searchFilter);
+  const [debouncedQuery, setDebouncedQuery] = useState(searchFilter);
 
   useEffect(() => {
     setLocalSearch(searchFilter);
+    setDebouncedQuery(searchFilter);
   }, [searchFilter]);
+
+  // Debounce search input for responsive typing and smooth filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(localSearch);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localSearch]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -45,15 +55,13 @@ const VaultList = () => {
       // Base path filters
       if (isInbox && !item.isInbox) return false;
       if (isFavorites && !item.isFavorite) return false;
-      // If it's "All" and we want to exclude Inbox items from the main view unless specified, we could do that.
-      // But usually "All" means all. Let's say "All" means everything.
 
       // Query params filters
       if (typeFilter && item.type !== typeFilter) return false;
 
-      // Search filter
-      if (localSearch) {
-        const query = localSearch.toLowerCase();
+      // Debounced search filter
+      if (debouncedQuery) {
+        const query = debouncedQuery.toLowerCase();
         const inTitle = item.title?.toLowerCase().includes(query);
         const inDesc = item.description?.toLowerCase().includes(query);
         const inTags = item.tags?.some(tag => tag.name.toLowerCase().includes(query));
@@ -62,27 +70,27 @@ const VaultList = () => {
 
       return true;
     });
-  }, [vaultItems, isInbox, isFavorites, typeFilter, localSearch]);
+  }, [vaultItems, isInbox, isFavorites, typeFilter, debouncedQuery]);
 
-  const handleToggleFavorite = async (id, isFavorite) => {
+  const handleToggleFavorite = useCallback(async (id, isFavorite) => {
     const formData = new FormData();
     formData.append('isFavorite', isFavorite);
     await updateVaultItem(id, formData);
-  };
+  }, [updateVaultItem]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     await deleteVaultItem(id);
-  };
+  }, [deleteVaultItem]);
 
-  const openEditModal = (item) => {
+  const openEditModal = useCallback((item) => {
     setEditItem(item);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const closeEditModal = () => {
+  const closeEditModal = useCallback(() => {
     setEditItem(null);
     setIsModalOpen(false);
-  };
+  }, []);
 
   let pageTitle = 'All Vault';
   let pageIcon = <FileText className="w-6 h-6 text-purple-600" />;

@@ -1,6 +1,7 @@
 import { VaultItem, Tag } from '../model/vaultModel.js';
 import { uploadFile, getSignedUrl, deleteFile } from '../services/storageService.js';
 import { logger } from '../utils/logger.js';
+import { cache } from '../utils/cache.js';
 
 export const createVaultItem = async (req, res) => {
   try {
@@ -90,15 +91,16 @@ export const getVaultItems = async (req, res) => {
 
     const items = await VaultItem.find(query)
       .populate('tags')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // Generate signed URLs for files
+    // Generate signed URLs in parallel for items with files
     const itemsWithUrls = await Promise.all(items.map(async (item) => {
-      const itemObj = item.toObject();
-      if (itemObj.filePath) {
-        itemObj.fileUrl = await getSignedUrl(itemObj.filePath);
+      if (item.filePath) {
+        const fileUrl = await getSignedUrl(item.filePath);
+        return { ...item, fileUrl };
       }
-      return itemObj;
+      return item;
     }));
 
     res.status(200).json({ success: true, data: itemsWithUrls });
@@ -154,17 +156,17 @@ export const deleteVaultItem = async (req, res) => {
     const owner = req.user.id;
     const { id } = req.params;
 
-    const item = await VaultItem.findOne({ _id: id, owner });
+    const item = await VaultItem.findOneAndDelete({ _id: id, owner }).lean();
     
     if (!item) {
       return res.status(404).json({ success: false, message: 'Item not found' });
     }
 
     if (item.filePath) {
-      await deleteFile(item.filePath);
+      deleteFile(item.filePath).catch((err) => {
+        logger.warn('Failed to delete file from storage', { filePath: item.filePath, message: err?.message });
+      });
     }
-
-    await VaultItem.deleteOne({ _id: id });
 
     res.status(200).json({ success: true, message: 'Item deleted' });
   } catch (error) {
@@ -180,10 +182,10 @@ export const createTag = async (req, res) => {
 
     if (!name) return res.status(400).json({ success: false, message: 'Tag name required' });
 
-    let tag = await Tag.findOne({ name, owner });
+    let tag = await Tag.findOne({ name, owner }).lean();
     if (!tag) {
-      tag = new Tag({ name, owner });
-      await tag.save();
+      tag = await Tag.create({ name, owner });
+      cache.del(`tags:${owner}`);
     }
 
     res.status(201).json({ success: true, data: tag });
@@ -196,7 +198,14 @@ export const createTag = async (req, res) => {
 export const getTags = async (req, res) => {
   try {
     const owner = req.user.id;
-    const tags = await Tag.find({ owner }).sort({ name: 1 });
+    const cacheKey = `tags:${owner}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return res.status(200).json({ success: true, data: cached });
+    }
+
+    const tags = await Tag.find({ owner }).sort({ name: 1 }).lean();
+    cache.set(cacheKey, tags, 120);
     res.status(200).json({ success: true, data: tags });
   } catch (error) {
     logger.error('Error fetching tags', { error: error.message });
@@ -210,6 +219,7 @@ export const deleteTag = async (req, res) => {
     const { id } = req.params;
 
     await Tag.findOneAndDelete({ _id: id, owner });
+    cache.del(`tags:${owner}`);
     
     // Remove this tag from all Vault items
     await VaultItem.updateMany(
